@@ -18,6 +18,7 @@ import { MeterSystem } from '../systems/MeterSystem';
 import { ScoringSystem } from '../systems/ScoringSystem';
 import { TaskPileSystem } from '../systems/TaskPileSystem';
 import { TaskSpawnSystem } from '../systems/TaskSpawnSystem';
+import { AimInput } from '../systems/AimInput';
 import { ThrustComboSystem } from '../systems/ThrustComboSystem';
 import type { GameSessionConfig, LimbKind, RunResult } from '../types/game';
 import { formatTime } from '../utils/resultStatus';
@@ -34,6 +35,7 @@ export class GameScene extends Phaser.Scene {
   private pile!: TaskPileSystem;
   private defeatSeq!: DefeatSequence;
   private thrustCombo = new ThrustComboSystem();
+  private aimInput = new AimInput();
 
   private tasks: TaskEntity[] = [];
   private elapsedSec = 0;
@@ -90,9 +92,10 @@ export class GameScene extends Phaser.Scene {
 
     this.createHud();
     this.setupInput();
+    this.aimInput.bind(this);
 
     this.hudHint = this.add
-      .text(cx, GAME_HEIGHT - 70, 'Ноги/руки — куда курсор, туда бьёт! Чередуй ноги для пах-комбо. Q/E/R — освободить руки', {
+      .text(cx, GAME_HEIGHT - 70, 'Мышь или стрелки — направление. Чередуй ноги для пах-комбо. Q/E/R — освободить руки', {
         fontSize: '13px',
         color: '#39ff14',
         fontFamily: 'system-ui, sans-serif',
@@ -163,7 +166,8 @@ export class GameScene extends Phaser.Scene {
     this.swingTimer = 150;
     this.meters.onHit(ITEMS[this.session.itemId].energyCost);
     const center = this.pasha.getCenter();
-    const resolved = this.limb.resolve(center.x, center.y, this.input.activePointer, this.hands.state);
+    const aim = this.aimInput.getAimPoint(center.x, center.y, this.input.activePointer);
+    const resolved = this.limb.resolve(center.x, center.y, aim.x, aim.y, this.hands.state);
     this.pasha.playLimbSwing(resolved.limb, this);
     this.limb.flashHit(resolved);
     const hitCount = this.checkHits(resolved);
@@ -301,7 +305,8 @@ export class GameScene extends Phaser.Scene {
       this.hands.state.inBathroom
     );
 
-    const resolved = this.limb.resolve(center.x, center.y, this.input.activePointer, this.hands.state);
+    const aim = this.aimInput.getAimPoint(center.x, center.y, this.input.activePointer);
+    const resolved = this.limb.resolve(center.x, center.y, aim.x, aim.y, this.hands.state);
     const limbLabels: Record<LimbKind, string> = {
       leftFoot: 'Левая нога',
       rightFoot: 'Правая нога',

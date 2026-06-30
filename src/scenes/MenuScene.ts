@@ -66,7 +66,7 @@ export class MenuScene extends Phaser.Scene {
     this.createButton(cx + 110, 420, 'TOP D[e]ADS', () => this.scene.start('LeaderboardScene'));
 
     this.add
-      .text(cx, GAME_HEIGHT - 40, 'Мышь — направление | ЛКМ/Пробел — удар | Q/E/R — освободить руки', {
+      .text(cx, GAME_HEIGHT - 40, 'Мышь/стрелки — направление | ЛКМ/Пробел — удар | Q/E/R — освободить руки', {
         fontSize: '11px',
         color: '#666',
         fontFamily: 'system-ui, sans-serif',

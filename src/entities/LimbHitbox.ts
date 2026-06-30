@@ -30,15 +30,16 @@ export class LimbHitbox {
     this.graphics.setDepth(15);
   }
 
-  /** Выбирает конкретную конечность по курсору и занятости рук */
+  /** Выбирает конкретную конечность по точке прицела и занятости рук */
   resolve(
     pashaX: number,
     pashaY: number,
-    pointer: Phaser.Input.Pointer,
+    aimX: number,
+    aimY: number,
     handState: HandState
   ): ResolvedLimb {
-    const px = pointer.x;
-    const py = pointer.y;
+    const px = aimX;
+    const py = aimY;
     const pointerLeft = px < pashaX;
 
     const candidates: { limb: LimbKind; footSide: FootKind | null; score: number }[] = [];
