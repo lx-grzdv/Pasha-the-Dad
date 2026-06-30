@@ -1,20 +1,23 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   getDatabaseUrl,
   parseLimit,
   rowToRunRecord,
   validateRunInput,
+  type DbRunRow,
   type RunRecord,
 } from '../_lib/leaderboard';
 
-function getSql() {
+type Sql = NeonQueryFunction<false, false>;
+
+function getSql(): Sql | null {
   const url = getDatabaseUrl();
   if (!url) return null;
   return neon(url);
 }
 
-async function insertRun(sql: ReturnType<typeof neon>, run: RunRecord): Promise<void> {
+async function insertRun(sql: Sql, run: RunRecord): Promise<void> {
   await sql`
     INSERT INTO runs (
       id, player_id, player_name, pasha_type, item_type,
@@ -30,30 +33,30 @@ async function insertRun(sql: ReturnType<typeof neon>, run: RunRecord): Promise<
   `;
 }
 
-async function fetchTop(sql: ReturnType<typeof neon>, limit: number, period?: string) {
+async function fetchTop(sql: Sql, limit: number, period?: string): Promise<DbRunRow[]> {
   if (period === 'today') {
     return sql`
       SELECT * FROM runs
       WHERE created_at >= CURRENT_DATE
       ORDER BY score DESC
       LIMIT ${limit}
-    `;
+    ` as Promise<DbRunRow[]>;
   }
 
   return sql`
     SELECT * FROM runs
     ORDER BY score DESC
     LIMIT ${limit}
-  `;
+  ` as Promise<DbRunRow[]>;
 }
 
-async function fetchPlayerBest(sql: ReturnType<typeof neon>, playerId: string) {
-  const rows = await sql`
+async function fetchPlayerBest(sql: Sql, playerId: string): Promise<DbRunRow | null> {
+  const rows = (await sql`
     SELECT * FROM runs
     WHERE player_id = ${playerId}::uuid
     ORDER BY score DESC
     LIMIT 1
-  `;
+  `) as DbRunRow[];
   return rows[0] ?? null;
 }
 
