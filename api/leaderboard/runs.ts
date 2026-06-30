@@ -1,10 +1,15 @@
 import { neon } from '@neondatabase/serverless';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RunRecord } from '../../src/services/leaderboard/types';
-import { parseLimit, rowToRunRecord, validateRunInput } from '../_lib/leaderboard';
+import {
+  getDatabaseUrl,
+  parseLimit,
+  rowToRunRecord,
+  validateRunInput,
+  type RunRecord,
+} from '../_lib/leaderboard';
 
 function getSql() {
-  const url = process.env.POSTGRES_URL;
+  const url = getDatabaseUrl();
   if (!url) return null;
   return neon(url);
 }
@@ -91,7 +96,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     res.setHeader('Allow', 'GET, POST');
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Leaderboard API error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', detail: message });
   }
 }

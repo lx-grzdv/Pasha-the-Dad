@@ -1,4 +1,22 @@
-import type { RunRecord } from '../../src/services/leaderboard/types';
+export interface RunRecord {
+  id: string;
+  playerId: string;
+  playerName: string;
+  pashaType: string;
+  itemType: string;
+  score: number;
+  survivalTime: number;
+  tasksDeflected: number;
+  tasksMissed: number;
+  maxChaosLevel: number;
+  babyFinal: number;
+  daughterFinal: number;
+  workFinal: number;
+  energyFinal: number;
+  resultStatus: string;
+  gameVersion: string;
+  createdAt: string;
+}
 
 export interface DbRunRow {
   id: string;
@@ -20,13 +38,22 @@ export interface DbRunRow {
   created_at: string | Date;
 }
 
+export function getDatabaseUrl(): string | null {
+  return (
+    process.env.POSTGRES_URL ??
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_URL_NON_POOLING ??
+    null
+  );
+}
+
 export function rowToRunRecord(row: DbRunRow): RunRecord {
   return {
     id: row.id,
     playerId: row.player_id,
     playerName: row.player_name,
-    pashaType: row.pasha_type as RunRecord['pashaType'],
-    itemType: row.item_type as RunRecord['itemType'],
+    pashaType: row.pasha_type,
+    itemType: row.item_type,
     score: row.score,
     survivalTime: row.survival_time,
     tasksDeflected: row.tasks_deflected,
