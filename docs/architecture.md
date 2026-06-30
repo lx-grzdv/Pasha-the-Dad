@@ -27,6 +27,8 @@ src/
 ## Системы (GameScene)
 
 - **HandStateSystem** — занятость рук, Q/E/R, кулдауны
+- **LimbHitbox** — выбор конкретной конечности по курсору, arc-хитбоксы от якорей
+- **ThrustComboSystem** — пах-комбо (чередование ног, MJ-thrust)
 - **MeterSystem** — 5 шкал, пассивный drain, критический fail
 - **ScoringSystem** + **ComboSystem** — очки и комбо
 - **DifficultyRamp** — spawn rate по времени и хаосу

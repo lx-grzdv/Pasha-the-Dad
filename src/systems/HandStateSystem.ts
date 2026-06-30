@@ -1,5 +1,5 @@
 import { COOLDOWNS, DURATIONS } from '../config/gameConfig';
-import type { HandState, LimbKind } from '../types/game';
+import type { HandState } from '../types/game';
 
 export class HandStateSystem {
   state: HandState = {
@@ -47,14 +47,6 @@ export class HandStateSystem {
       this.state.leftHandFree = false;
       this.state.rightHandFree = false;
     }
-  }
-
-  getActiveLimb(): LimbKind {
-    if (this.state.inBathroom) return 'bothHands';
-    if (this.state.leftHandFree && this.state.rightHandFree) return 'bothHands';
-    if (this.state.leftHandFree) return 'leftHand';
-    if (this.state.rightHandFree) return 'rightHand';
-    return 'feet';
   }
 
   canTossBaby(now: number): boolean {

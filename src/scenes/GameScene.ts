@@ -8,7 +8,7 @@ import {
   pickRandom,
 } from '../config/popupPhrases';
 import { ITEMS } from '../config/pashaTypes';
-import { LimbHitbox } from '../entities/LimbHitbox';
+import { LimbHitbox, type ResolvedLimb } from '../entities/LimbHitbox';
 import { PashaVisual } from '../entities/Pasha';
 import { TaskEntity } from '../entities/Task';
 import { DefeatSequence } from '../systems/DefeatSequence';
@@ -18,7 +18,8 @@ import { MeterSystem } from '../systems/MeterSystem';
 import { ScoringSystem } from '../systems/ScoringSystem';
 import { TaskPileSystem } from '../systems/TaskPileSystem';
 import { TaskSpawnSystem } from '../systems/TaskSpawnSystem';
-import type { GameSessionConfig, RunResult } from '../types/game';
+import { ThrustComboSystem } from '../systems/ThrustComboSystem';
+import type { GameSessionConfig, LimbKind, RunResult } from '../types/game';
 import { formatTime } from '../utils/resultStatus';
 
 export class GameScene extends Phaser.Scene {
@@ -32,6 +33,7 @@ export class GameScene extends Phaser.Scene {
   private spawner = new TaskSpawnSystem();
   private pile!: TaskPileSystem;
   private defeatSeq!: DefeatSequence;
+  private thrustCombo = new ThrustComboSystem();
 
   private tasks: TaskEntity[] = [];
   private elapsedSec = 0;
@@ -79,6 +81,7 @@ export class GameScene extends Phaser.Scene {
     this.lastSink = 0;
     this.warnedMeters.clear();
     this.lastComboPhrase = 0;
+    this.thrustCombo.reset();
 
     this.pile = new TaskPileSystem(this, cx, cy + 50);
     this.pasha = new PashaVisual(this, cx, cy);
@@ -89,7 +92,7 @@ export class GameScene extends Phaser.Scene {
     this.setupInput();
 
     this.hudHint = this.add
-      .text(cx, GAME_HEIGHT - 70, 'Обе руки заняты — бей ногами! Q — подбросить малыша', {
+      .text(cx, GAME_HEIGHT - 70, 'Ноги/руки — куда курсор, туда бьёт! Чередуй ноги для пах-комбо. Q/E/R — освободить руки', {
         fontSize: '13px',
         color: '#39ff14',
         fontFamily: 'system-ui, sans-serif',
@@ -159,10 +162,11 @@ export class GameScene extends Phaser.Scene {
     this.swinging = true;
     this.swingTimer = 150;
     this.meters.onHit(ITEMS[this.session.itemId].energyCost);
-    const limb = this.hands.getActiveLimb();
     const center = this.pasha.getCenter();
-    this.limb.flashHit(center.x, center.y, limb);
-    const hitCount = this.checkHits();
+    const resolved = this.limb.resolve(center.x, center.y, this.input.activePointer, this.hands.state);
+    this.pasha.playLimbSwing(resolved.limb, this);
+    this.limb.flashHit(resolved);
+    const hitCount = this.checkHits(resolved);
     if (hitCount > 0) {
       this.showPopup(pickRandom(DEFLECT_PHRASES), '#39ff14');
     }
@@ -199,11 +203,10 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: t.y - 40, alpha: 0, duration: 800, onComplete: () => t.destroy() });
   }
 
-  private checkHits(): number {
-    const limb = this.hands.getActiveLimb();
-    const center = this.pasha.getCenter();
-    const hit = this.limb.getHitCircle(center.x, center.y, limb);
+  private checkHits(resolved: ResolvedLimb): number {
+    const hit = this.limb.getHitCircle(resolved);
     const item = ITEMS[this.session.itemId];
+    const limbPower = this.limb.getPowerMod(resolved.limb);
     let hits = 0;
 
     for (const task of [...this.tasks]) {
@@ -213,12 +216,17 @@ export class GameScene extends Phaser.Scene {
         let bonus = 0;
         if (task.def.type === 'baby') bonus = item.babyBonus;
         if (task.def.type === 'work') bonus = item.workBonus;
+        const thrust = this.thrustCombo.onDeflect(resolved.limb);
         const prevStreak = this.scoring.getComboStreak();
-        this.scoring.onDeflect(task.def, item, bonus);
+        this.scoring.onDeflect(task.def, item, bonus, limbPower, thrust.bonusMult);
         this.meters.onTaskDeflected(task.def.type, item.energyCost);
         task.deflect(this);
         this.tasks = this.tasks.filter((t) => t !== task);
         hits++;
+
+        if (thrust.phrase) {
+          this.showPopup(thrust.phrase, '#ff6b9d');
+        }
 
         const streak = this.scoring.getComboStreak();
         const phrase = COMBO_PHRASES[streak];
@@ -293,18 +301,24 @@ export class GameScene extends Phaser.Scene {
       this.hands.state.inBathroom
     );
 
-    const limb = this.hands.getActiveLimb();
-    const limbLabels = { feet: 'Ноги', leftHand: 'Левая рука', rightHand: 'Правая рука', bothHands: 'Обе руки!' };
-    this.hudLimb.setText(limbLabels[limb]);
+    const resolved = this.limb.resolve(center.x, center.y, this.input.activePointer, this.hands.state);
+    const limbLabels: Record<LimbKind, string> = {
+      leftFoot: 'Левая нога',
+      rightFoot: 'Правая нога',
+      leftHand: 'Левая рука',
+      rightHand: 'Правая рука',
+      bothHands: 'Обе руки!',
+    };
+    const thrustHint =
+      this.thrustCombo.streak >= 2 ? ` · пах x${this.thrustCombo.streak}` : '';
+    this.hudLimb.setText(limbLabels[resolved.limb] + thrustHint);
 
     if (this.swinging) {
       this.swingTimer -= delta;
       if (this.swingTimer <= 0) this.swinging = false;
     }
 
-    const pointer = this.input.activePointer;
-    this.limb.setAngleFromPointer(center.x, center.y, pointer, limb);
-    this.limb.draw(center.x, center.y, limb, this.swinging);
+    this.limb.draw(resolved, this.swinging);
 
     this.updateHud(remaining);
   }

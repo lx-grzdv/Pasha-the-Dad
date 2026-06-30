@@ -23,10 +23,10 @@ export class ScoringSystem {
     return this.combo.multiplier;
   }
 
-  onDeflect(task: TaskDefinition, item: ItemDefinition, typeBonus: number): void {
+  onDeflect(task: TaskDefinition, item: ItemDefinition, typeBonus: number, limbPower = 1, thrustBonus = 0): void {
     const mult = this.combo.onSuccess();
-    let pts = task.points * mult * item.powerMod;
-    pts *= 1 + typeBonus;
+    let pts = task.points * mult * item.powerMod * limbPower;
+    pts *= 1 + typeBonus + thrustBonus;
     this.score += Math.floor(pts);
     this.tasksDeflected++;
   }

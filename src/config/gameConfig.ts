@@ -20,11 +20,15 @@ export const COLORS = {
   meterBg: 0x333333,
 };
 
+/** Якорь и параметры каждой конечности относительно центра Паши */
 export const LIMB = {
-  feet: { radius: 45, arc: Math.PI * 0.6, power: 0.7 },
-  leftHand: { radius: 70, arc: Math.PI * 0.8, power: 1.0 },
-  rightHand: { radius: 70, arc: Math.PI * 0.8, power: 1.0 },
-  bothHands: { radius: 90, arc: Math.PI * 1.2, power: 1.3 },
+  leftFoot: { anchorX: -16, anchorY: 42, radius: 42, arc: Math.PI * 0.55, power: 0.7, hitR: 26 },
+  rightFoot: { anchorX: 16, anchorY: 42, radius: 42, arc: Math.PI * 0.55, power: 0.7, hitR: 26 },
+  /** Точка «паха» — MJ-thrust, общий origin для ног */
+  groin: { anchorX: 0, anchorY: 24, radius: 48, arc: Math.PI * 0.5, power: 0.75, hitR: 30 },
+  leftHand: { anchorX: -38, anchorY: 2, radius: 68, arc: Math.PI * 0.85, power: 1.0, hitR: 36 },
+  rightHand: { anchorX: 38, anchorY: 2, radius: 68, arc: Math.PI * 0.85, power: 1.0, hitR: 36 },
+  bothHands: { anchorX: 0, anchorY: -8, radius: 88, arc: Math.PI * 1.15, power: 1.3, hitR: 42 },
 } as const;
 
 export const COOLDOWNS = {
@@ -50,3 +54,12 @@ export const COMBO_THRESHOLDS = [
   { count: 10, multiplier: 1.5 },
   { count: 20, multiplier: 2.0 },
 ] as const;
+
+/** Пороги комбо пахом (MJ-thrust) */
+export const THRUST_COMBO = {
+  phraseAt: 3,
+  bonusAt: 3,
+  bonusMult: 0.25,
+  megaAt: 5,
+  megaMult: 0.5,
+} as const;

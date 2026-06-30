@@ -24,7 +24,8 @@ export interface RunResult {
   playerName: string;
 }
 
-export type LimbKind = 'feet' | 'leftHand' | 'rightHand' | 'bothHands';
+/** Конкретная конечность для отбивания */
+export type LimbKind = 'leftFoot' | 'rightFoot' | 'leftHand' | 'rightHand' | 'bothHands';
 
 export interface HandState {
   leftHandFree: boolean;
