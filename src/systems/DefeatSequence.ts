@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TASK_DEFINITIONS } from '../config/tasks';
+import { TASK_DEFINITIONS, type TaskDefinition } from '../config/tasks';
 import type { TaskPileSystem } from './TaskPileSystem';
 
 export class DefeatSequence {
@@ -15,9 +15,14 @@ export class DefeatSequence {
     return this.running;
   }
 
-  play(centerX: number, centerY: number): void {
+  play(centerX: number, centerY: number, flyingTasks: TaskDefinition[] = []): void {
     if (this.running) return;
     this.running = true;
+
+    // Stick all in-flight tasks to the pile
+    for (const def of flyingTasks) {
+      this.pile.addStuck(def, Phaser.Math.Between(-70, 70));
+    }
 
     const overlay = this.scene.add.rectangle(
       centerX,

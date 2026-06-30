@@ -2,6 +2,10 @@
 
 Браузерная 2D-аркада: Паша отбивает летящие задачи, балансирует малыша, дочь и работу — или тонет в куче дел.
 
+**Играть:** https://pasha-the-dad.vercel.app
+
+**Репозиторий:** https://github.com/lx-grzdv/Pasha-the-Dad
+
 ## Быстрый старт
 
 ```bash
@@ -30,7 +34,7 @@ npm run dev
 ## Стек
 
 - Vite + TypeScript + Phaser 3
-- Рейтинг: localStorage (MVP)
+- Рейтинг: hybrid (localStorage + Neon Postgres на Vercel)
 - Деплой: [Vercel](docs/deployment.md)
 
 ## Документация
@@ -43,4 +47,6 @@ npm run dev
 
 ## Env
 
-Скопируй `.env.example` → `.env` когда подключите БД. Сейчас env не обязателен.
+Скопируй `.env.example` → `.env` при необходимости. По умолчанию env не обязателен — без Postgres рейтинг локальный.
+
+Для глобального рейтинга: подключи Neon в Vercel и выполни `sql/init.sql` — см. [leaderboard.md](docs/leaderboard.md).

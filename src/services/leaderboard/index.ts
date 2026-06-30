@@ -1,16 +1,24 @@
+import { HybridLeaderboard } from './HybridLeaderboard';
 import { LocalLeaderboard } from './LocalLeaderboard';
+import { RemoteLeaderboard } from './RemoteLeaderboard';
 import type { LeaderboardService } from './types';
 
 let instance: LeaderboardService | null = null;
 
 export function getLeaderboard(): LeaderboardService {
   if (!instance) {
-    const adapter = import.meta.env.VITE_LEADERBOARD_ADAPTER ?? 'local';
-    if (adapter === 'remote') {
-      // Future: RemoteLeaderboard
-      console.warn('Remote leaderboard not implemented, using local');
+    const adapter = import.meta.env.VITE_LEADERBOARD_ADAPTER ?? 'hybrid';
+    switch (adapter) {
+      case 'local':
+        instance = new LocalLeaderboard();
+        break;
+      case 'remote':
+        instance = new RemoteLeaderboard();
+        break;
+      default:
+        instance = new HybridLeaderboard();
+        break;
     }
-    instance = new LocalLeaderboard();
   }
   return instance;
 }

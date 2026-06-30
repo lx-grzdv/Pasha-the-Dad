@@ -1,8 +1,15 @@
 import Phaser from 'phaser';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH, RUN_DURATION_SEC } from '../config/gameConfig';
+import {
+  COMBO_PHRASES,
+  DEFLECT_PHRASES,
+  LOW_METER_PHRASES,
+  MISS_PHRASES,
+  pickRandom,
+} from '../config/popupPhrases';
 import { ITEMS } from '../config/pashaTypes';
-import { TASK_DEFINITIONS } from '../config/tasks';
-import { LimbHitbox, PashaVisual } from '../entities/Pasha';
+import { LimbHitbox } from '../entities/LimbHitbox';
+import { PashaVisual } from '../entities/Pasha';
 import { TaskEntity } from '../entities/Task';
 import { DefeatSequence } from '../systems/DefeatSequence';
 import { DifficultyRamp } from '../systems/DifficultyRamp';
@@ -10,6 +17,7 @@ import { HandStateSystem } from '../systems/HandStateSystem';
 import { MeterSystem } from '../systems/MeterSystem';
 import { ScoringSystem } from '../systems/ScoringSystem';
 import { TaskPileSystem } from '../systems/TaskPileSystem';
+import { TaskSpawnSystem } from '../systems/TaskSpawnSystem';
 import type { GameSessionConfig, RunResult } from '../types/game';
 import { formatTime } from '../utils/resultStatus';
 
@@ -21,6 +29,7 @@ export class GameScene extends Phaser.Scene {
   private meters = new MeterSystem();
   private scoring = new ScoringSystem();
   private ramp = new DifficultyRamp();
+  private spawner = new TaskSpawnSystem();
   private pile!: TaskPileSystem;
   private defeatSeq!: DefeatSequence;
 
@@ -33,6 +42,8 @@ export class GameScene extends Phaser.Scene {
   private won = false;
   private basePashaY = 0;
   private lastSink = 0;
+  private warnedMeters = new Set<string>();
+  private lastComboPhrase = 0;
 
   private hudTimer!: Phaser.GameObjects.Text;
   private hudScore!: Phaser.GameObjects.Text;
@@ -66,6 +77,8 @@ export class GameScene extends Phaser.Scene {
     this.gameOver = false;
     this.won = false;
     this.lastSink = 0;
+    this.warnedMeters.clear();
+    this.lastComboPhrase = 0;
 
     this.pile = new TaskPileSystem(this, cx, cy + 50);
     this.pasha = new PashaVisual(this, cx, cy);
@@ -146,7 +159,13 @@ export class GameScene extends Phaser.Scene {
     this.swinging = true;
     this.swingTimer = 150;
     this.meters.onHit(ITEMS[this.session.itemId].energyCost);
-    this.checkHits();
+    const limb = this.hands.getActiveLimb();
+    const center = this.pasha.getCenter();
+    this.limb.flashHit(center.x, center.y, limb);
+    const hitCount = this.checkHits();
+    if (hitCount > 0) {
+      this.showPopup(pickRandom(DEFLECT_PHRASES), '#39ff14');
+    }
   }
 
   private tryAction(kind: 'toss' | 'kindergarten' | 'bathroom'): void {
@@ -162,16 +181,17 @@ export class GameScene extends Phaser.Scene {
       msg = ok ? 'Дочь в сад!' : '';
     } else {
       ok = this.hands.hideInBathroom(now);
-      msg = ok ? 'Туалет!' : '';
+      msg = ok ? 'Туалет! Работа не ждёт...' : '';
     }
     if (msg) this.showPopup(msg);
   }
 
-  private showPopup(text: string): void {
+  private showPopup(text: string, color = '#39ff14'): void {
+    const c = this.pasha.getCenter();
     const t = this.add
-      .text(this.pasha.getCenter().x, this.pasha.getCenter().y - 100, text, {
+      .text(c.x, c.y - 100, text, {
         fontSize: '14px',
-        color: '#39ff14',
+        color,
         fontFamily: 'system-ui, sans-serif',
       })
       .setOrigin(0.5)
@@ -179,11 +199,12 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: t.y - 40, alpha: 0, duration: 800, onComplete: () => t.destroy() });
   }
 
-  private checkHits(): void {
+  private checkHits(): number {
     const limb = this.hands.getActiveLimb();
     const center = this.pasha.getCenter();
     const hit = this.limb.getHitCircle(center.x, center.y, limb);
     const item = ITEMS[this.session.itemId];
+    let hits = 0;
 
     for (const task of [...this.tasks]) {
       if (task.state !== 'flying') continue;
@@ -192,12 +213,24 @@ export class GameScene extends Phaser.Scene {
         let bonus = 0;
         if (task.def.type === 'baby') bonus = item.babyBonus;
         if (task.def.type === 'work') bonus = item.workBonus;
+        const prevStreak = this.scoring.getComboStreak();
         this.scoring.onDeflect(task.def, item, bonus);
         this.meters.onTaskDeflected(task.def.type, item.energyCost);
         task.deflect(this);
         this.tasks = this.tasks.filter((t) => t !== task);
+        hits++;
+
+        const streak = this.scoring.getComboStreak();
+        const phrase = COMBO_PHRASES[streak];
+        if (phrase && streak > this.lastComboPhrase) {
+          this.lastComboPhrase = streak;
+          this.showPopup(phrase, '#ffd93d');
+        } else if (prevStreak === 0 && streak === 1) {
+          // no spam on first hit
+        }
       }
     }
+    return hits;
   }
 
   update(_time: number, delta: number): void {
@@ -220,7 +253,8 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Spawn
+    this.checkLowMeters();
+
     const params = this.ramp.getSpawnParams(this.elapsedSec, this.meters.values.chaos);
     this.spawnTimer += delta;
     if (this.spawnTimer >= params.intervalMs) {
@@ -230,7 +264,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Update tasks
     const center = this.pasha.getCenter();
     for (const task of [...this.tasks]) {
       if (task.state !== 'flying') continue;
@@ -242,10 +275,12 @@ export class GameScene extends Phaser.Scene {
         this.pile.addStuck(task.def);
         task.destroy();
         this.tasks = this.tasks.filter((t) => t !== task);
+        if (Math.random() < 0.35) {
+          this.showPopup(pickRandom(MISS_PHRASES), '#ff6b6b');
+        }
       }
     }
 
-    // Pasha sink
     const sink = this.pile.getSinkOffset();
     if (sink !== this.lastSink) {
       this.pasha.setPosition(center.x, this.basePashaY + sink);
@@ -255,8 +290,7 @@ export class GameScene extends Phaser.Scene {
     this.pasha.updateVisuals(
       this.hands.state.leftHandFree,
       this.hands.state.rightHandFree,
-      this.hands.state.inBathroom,
-      sink
+      this.hands.state.inBathroom
     );
 
     const limb = this.hands.getActiveLimb();
@@ -275,26 +309,26 @@ export class GameScene extends Phaser.Scene {
     this.updateHud(remaining);
   }
 
-  private spawnTask(speed: number): void {
-    const def = TASK_DEFINITIONS[Phaser.Math.Between(0, TASK_DEFINITIONS.length - 1)];
-    const center = this.pasha.getCenter();
-    const edge = Phaser.Math.Between(0, 3);
-    let sx: number, sy: number;
-    const margin = 30;
-    if (edge === 0) {
-      sx = Phaser.Math.Between(margin, GAME_WIDTH - margin);
-      sy = -margin;
-    } else if (edge === 1) {
-      sx = GAME_WIDTH + margin;
-      sy = Phaser.Math.Between(margin, GAME_HEIGHT - margin);
-    } else if (edge === 2) {
-      sx = Phaser.Math.Between(margin, GAME_WIDTH - margin);
-      sy = GAME_HEIGHT + margin;
-    } else {
-      sx = -margin;
-      sy = Phaser.Math.Between(margin, GAME_HEIGHT - margin);
+  private checkLowMeters(): void {
+    const checks: { key: keyof typeof LOW_METER_PHRASES; value: number }[] = [
+      { key: 'baby', value: this.meters.values.baby },
+      { key: 'daughter', value: this.meters.values.daughter },
+      { key: 'work', value: this.meters.values.work },
+      { key: 'energy', value: this.meters.values.energy },
+    ];
+    for (const { key, value } of checks) {
+      if (value < 25 && !this.warnedMeters.has(key)) {
+        this.warnedMeters.add(key);
+        this.showPopup(LOW_METER_PHRASES[key], '#ff922b');
+      }
+      if (value > 35) this.warnedMeters.delete(key);
     }
-    this.tasks.push(new TaskEntity(this, def, sx, sy, center.x, center.y, speed));
+  }
+
+  private spawnTask(speed: number): void {
+    const center = this.pasha.getCenter();
+    const task = this.spawner.spawnFromEdge(this, center.x, center.y, speed);
+    this.tasks.push(task);
   }
 
   private updateHud(remaining: number): void {
@@ -317,11 +351,14 @@ export class GameScene extends Phaser.Scene {
 
     const cd = this.hands.getCooldownRemaining(this.time.now);
     const labels = [
-      cd.q > 0 ? `Q: ${(cd.q / 1000).toFixed(1)}s` : 'Q: малыш',
-      cd.e > 0 ? `E: ${(cd.e / 1000).toFixed(1)}s` : 'E: сад',
-      cd.r > 0 ? `R: ${(cd.r / 1000).toFixed(1)}s` : 'R: туалет',
+      cd.q > 0 ? `Q: ${(cd.q / 1000).toFixed(1)}s` : 'Q: малыш ✓',
+      cd.e > 0 ? `E: ${(cd.e / 1000).toFixed(1)}s` : 'E: сад ✓',
+      cd.r > 0 ? `R: ${(cd.r / 1000).toFixed(1)}s` : 'R: туалет ✓',
     ];
-    this.cooldownTexts.forEach((t, i) => t.setText(labels[i]));
+    this.cooldownTexts.forEach((t, i) => {
+      t.setText(labels[i]);
+      t.setColor(cd[(['q', 'e', 'r'] as const)[i]] > 0 ? '#888' : '#39ff14');
+    });
 
     if (this.elapsedSec > 15) this.hudHint.setVisible(false);
   }
@@ -332,8 +369,11 @@ export class GameScene extends Phaser.Scene {
     this.scoring.finalize(Math.floor(this.elapsedSec), this.meters.getBalanceBonus(), won);
 
     if (!won) {
+      const flying = this.tasks.filter((t) => t.state === 'flying').map((t) => t.def);
+      for (const t of this.tasks) t.destroy();
+      this.tasks = [];
       const c = this.pasha.getCenter();
-      this.defeatSeq.play(c.x, c.y);
+      this.defeatSeq.play(c.x, c.y, flying);
     } else {
       this.time.delayedCall(500, () => this.goToResult());
     }

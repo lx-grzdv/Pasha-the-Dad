@@ -3,6 +3,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config/gameConfig';
 import { getOrCreatePlayerId } from '../services/playerStorage';
 import { getLeaderboard } from '../services/leaderboard';
 import type { RunRecord } from '../services/leaderboard';
+import { HybridLeaderboard } from '../services/leaderboard/HybridLeaderboard';
 import { formatTime } from '../utils/resultStatus';
 
 export class LeaderboardScene extends Phaser.Scene {
@@ -22,15 +23,22 @@ export class LeaderboardScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.add
-      .text(cx, 75, 'Рейтинг на этом устройстве (БД подключим позже)', {
-        fontSize: '11px',
-        color: '#666',
-        fontFamily: 'system-ui, sans-serif',
-      })
-      .setOrigin(0.5);
-
     const lb = getLeaderboard();
+    const isGlobal =
+      lb instanceof HybridLeaderboard ? await lb.isGlobal() : import.meta.env.VITE_LEADERBOARD_ADAPTER === 'remote';
+
+    this.add
+      .text(
+        cx,
+        75,
+        isGlobal ? 'Глобальный рейтинг — все игроки' : 'Рейтинг на этом устройстве',
+        {
+          fontSize: '11px',
+          color: '#666',
+          fontFamily: 'system-ui, sans-serif',
+        }
+      )
+      .setOrigin(0.5);
     const top = await lb.getTopRuns(10);
     const today = await lb.getTodayTopRuns(5);
     const best = await lb.getPlayerBest(getOrCreatePlayerId());

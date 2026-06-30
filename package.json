@@ -9,9 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "phaser": "^3.87.0"
   },
   "devDependencies": {
+    "@vercel/node": "^5.8.22",
     "typescript": "^5.7.2",
     "vite": "^6.0.3"
   }

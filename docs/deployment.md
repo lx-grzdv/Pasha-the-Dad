@@ -2,11 +2,12 @@
 
 ## Конфигурация
 
-Проект — статический SPA (Vite + Phaser). Файл [`vercel.json`](../vercel.json):
+Проект — Vite + Phaser SPA + Serverless API. Файл [`vercel.json`](../vercel.json):
 
 - Build: `npm run build`
 - Output: `dist`
-- Rewrite: все маршруты → `/index.html`
+- API: `api/` (Serverless Functions)
+- Rewrite: все остальные маршруты → `/index.html`
 
 ## Чеклист
 
@@ -18,23 +19,33 @@
 6. Deploy → проверить preview URL
 7. Promote to Production на main branch
 
-## Env (когда подключите БД)
+## Глобальный рейтинг (Neon Postgres)
 
-В Vercel → Settings → Environment Variables:
+1. Vercel → **Storage** → Create Database → **Neon Postgres**
+2. Connect to project → redeploy (появится `POSTGRES_URL`)
+3. Neon → SQL Editor → выполнить [`sql/init.sql`](../sql/init.sql)
+4. Проверить: `GET https://<your-domain>/api/leaderboard/runs?limit=1` → `200` и `{ "runs": [] }`
 
-```
-VITE_LEADERBOARD_ADAPTER=remote
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_ANON_KEY=...
-```
+Подробнее: [leaderboard.md](leaderboard.md)
 
-До подключения БД переменные **не нужны**.
+## Env (опционально)
+
+| Переменная | Когда |
+|------------|-------|
+| `POSTGRES_URL` | Auto от Neon integration |
+| `VITE_LEADERBOARD_ADAPTER=local` | Принудительно local-only |
 
 ## Локальная проверка билда
 
 ```bash
 npm run build
 npm run preview
+```
+
+С API и БД:
+
+```bash
+npx vercel dev
 ```
 
 ## Preview deployments

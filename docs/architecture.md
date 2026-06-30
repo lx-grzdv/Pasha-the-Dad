@@ -30,13 +30,15 @@ src/
 - **MeterSystem** — 5 шкал, пассивный drain, критический fail
 - **ScoringSystem** + **ComboSystem** — очки и комбо
 - **DifficultyRamp** — spawn rate по времени и хаосу
+- **TaskSpawnSystem** — спавн задач с краёв экрана
 - **TaskPileSystem** — куча пропущенных задач, sink Паши
 - **DefeatSequence** — лавина при поражении
 
 ## Сервисы
 
 - `playerStorage` — uuid и имя в localStorage
-- `LeaderboardService` — интерфейс; `LocalLeaderboard` — MVP
+- `LeaderboardService` — интерфейс; `LocalLeaderboard`, `RemoteLeaderboard`, `HybridLeaderboard` (default)
+- API: `api/leaderboard/runs.ts` → Neon Postgres
 
 ## Поток данных
 

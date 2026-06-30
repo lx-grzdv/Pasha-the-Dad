@@ -1,10 +1,24 @@
 # Рейтинг и storage
 
-## MVP: LocalLeaderboard
+## Режимы
+
+| Адаптер | Env | Поведение |
+|---------|-----|-----------|
+| `hybrid` (default) | — | localStorage + sync в Postgres через API |
+| `local` | `VITE_LEADERBOARD_ADAPTER=local` | только это устройство |
+| `remote` | `VITE_LEADERBOARD_ADAPTER=remote` | только сервер |
+
+## LocalLeaderboard
 
 - Ключ localStorage: `pasha_dead_runs`
 - Хранит до 500 забегов, сортировка по score
-- UI показывает плашку «рейтинг на этом устройстве»
+
+## RemoteLeaderboard / API
+
+- `POST /api/leaderboard/runs` — сохранить забег
+- `GET /api/leaderboard/runs?limit=10` — топ за всё время
+- `GET /api/leaderboard/runs?limit=5&period=today` — топ за сегодня
+- `GET /api/leaderboard/runs?playerId=<uuid>&limit=1` — лучший забег игрока
 
 ## Интерфейс LeaderboardService
 
@@ -17,50 +31,25 @@ interface LeaderboardService {
 }
 ```
 
-Переключение адаптера: `VITE_LEADERBOARD_ADAPTER=local|remote`
+## Схема БД (Neon Postgres)
 
-## Будущая схема БД (из брифа)
+См. [`sql/init.sql`](../sql/init.sql). Таблица `runs` — поля совпадают с `RunRecord`.
 
-### players
+## Подключение на Vercel
 
-```sql
-players (
-  id uuid primary key,
-  name text,
-  created_at timestamp
-)
+1. Vercel Dashboard → Storage → Create Database → **Neon Postgres**
+2. Привязать к проекту `pasha-the-dead` — появится `POSTGRES_URL`
+3. Neon SQL Editor → выполнить `sql/init.sql`
+4. Redeploy
+
+Клиентский env **не нужен** — `HybridLeaderboard` сам найдёт API.
+
+## Локальная разработка с БД
+
+```bash
+npx vercel env pull .env.local
+# добавить POSTGRES_URL в окружение
+npx vercel dev
 ```
 
-### runs
-
-```sql
-runs (
-  id uuid primary key,
-  player_id uuid,
-  player_name text,
-  pasha_type text,
-  item_type text,
-  score integer,
-  survival_time integer,
-  tasks_deflected integer,
-  tasks_missed integer,
-  max_chaos_level integer,
-  baby_final integer,
-  daughter_final integer,
-  work_final integer,
-  energy_final integer,
-  result_status text,
-  game_version text,
-  created_at timestamp
-)
-```
-
-## Кандидаты БД (решение отложено)
-
-| Вариант | Когда выбрать |
-|---------|---------------|
-| Supabase | быстрый старт, anon RLS |
-| Vercel Postgres | всё в одном месте с деплоем |
-| Turso | edge SQLite |
-
-При выборе: ADR `docs/adr/00N-database-choice.md` + `RemoteLeaderboard` adapter.
+Без `vercel dev` API недоступен — hybrid откатывается на localStorage.
