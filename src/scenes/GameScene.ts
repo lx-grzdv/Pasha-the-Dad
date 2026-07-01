@@ -284,7 +284,7 @@ export class GameScene extends Phaser.Scene {
     const center = this.pasha.getCenter();
     const aim = this.aimInput.getAimPoint(center.x, center.y, this.input.activePointer);
     const resolved = this.limb.resolve(center.x, center.y, aim.x, aim.y, this.hands.state);
-    this.pasha.playLimbSwing(resolved.limb, this);
+    this.pasha.playLimbSwing(resolved.limb, this, resolved.angle);
     this.limb.flashHit(resolved);
     const hitCount = this.checkHits(resolved);
     if (hitCount > 0) {

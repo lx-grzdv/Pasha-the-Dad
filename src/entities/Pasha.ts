@@ -85,19 +85,27 @@ export class PashaVisual {
     this.container.setAlpha(inBathroom ? 0.55 : 1);
   }
 
-  /** Анимация удара конкретной конечностью */
-  playLimbSwing(limb: LimbKind, scene: Phaser.Scene): void {
+  /** Анимация удара конкретной конечностью. aimAngle — куда бьём (радианы) */
+  playLimbSwing(limb: LimbKind, scene: Phaser.Scene, aimAngle?: number): void {
     if (this.swinging) return;
     this.swinging = true;
 
     const reset = () => {
       this.body.setPosition(0, 6);
       this.body.setScale(1, 1);
+      this.body.setAngle(0);
       this.leftLeg.setAngle(0);
       this.rightLeg.setAngle(0);
-      this.leftArm.setAngle(0);
-      this.rightArm.setAngle(0);
+      this.leftArm.setAngle(0).setScale(1).setPosition(-24, -8);
+      this.rightArm.setAngle(0).setScale(1).setPosition(24, -8);
       this.swinging = false;
+    };
+
+    /** Угол поворота руки, чтобы кулак смотрел в прицел (рука в покое висит вниз) */
+    const armTarget = (fallbackDeg: number): number => {
+      if (aimAngle === undefined) return fallbackDeg;
+      const deg = Phaser.Math.Angle.WrapDegrees(Phaser.Math.RadToDeg(aimAngle) - 90);
+      return Phaser.Math.Clamp(deg, -135, 135);
     };
 
     if (limb === 'leftFoot' || limb === 'rightFoot') {
@@ -129,25 +137,57 @@ export class PashaVisual {
 
     const arm = limb === 'leftHand' ? this.leftArm : limb === 'rightHand' ? this.rightArm : null;
     if (arm) {
-      const dir = limb === 'leftHand' ? -35 : 35;
+      // Джеб: рука выстреливает в прицел, вытягивается, корпус подаётся следом
+      const target = armTarget(limb === 'leftHand' ? -70 : 70);
       scene.tweens.add({
         targets: arm,
-        angle: dir,
-        duration: 80,
+        angle: target,
+        scaleX: 1.35,
+        scaleY: 1.3,
+        y: -12,
+        duration: 70,
+        ease: 'Back.easeOut',
         yoyo: true,
         onComplete: reset,
+      });
+      scene.tweens.add({
+        targets: this.body,
+        angle: target >= 0 ? 5 : -5,
+        scaleY: 0.96,
+        duration: 70,
+        yoyo: true,
       });
       return;
     }
 
     if (limb === 'bothHands') {
-      scene.tweens.add({ targets: this.leftArm, angle: -40, duration: 90, yoyo: true });
+      const target = armTarget(0);
+      scene.tweens.add({
+        targets: this.leftArm,
+        angle: target - 20,
+        scaleX: 1.35,
+        scaleY: 1.3,
+        y: -12,
+        duration: 80,
+        ease: 'Back.easeOut',
+        yoyo: true,
+      });
       scene.tweens.add({
         targets: this.rightArm,
-        angle: 40,
-        duration: 90,
+        angle: target + 20,
+        scaleX: 1.35,
+        scaleY: 1.3,
+        y: -12,
+        duration: 80,
+        ease: 'Back.easeOut',
         yoyo: true,
         onComplete: reset,
+      });
+      scene.tweens.add({
+        targets: this.body,
+        scaleY: 0.94,
+        duration: 80,
+        yoyo: true,
       });
       return;
     }
