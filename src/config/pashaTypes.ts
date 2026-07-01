@@ -15,8 +15,8 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
   slipper: {
     id: 'slipper',
     name: 'Тапок',
-    description: 'Универсальный. Средний удар.',
-    powerMod: 1.0,
+    description: 'Классика жанра. Заметно больше очков за отбитие.',
+    powerMod: 1.2,
     radiusMod: 1.0,
     babyBonus: 0,
     workBonus: 0,
@@ -25,9 +25,9 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
   rattle: {
     id: 'rattle',
     name: 'Погремушка',
-    description: 'Лучше против малыша. Слабее на работе.',
-    powerMod: 0.9,
-    radiusMod: 1.1,
+    description: 'Шире зона удара, бонус против малыша. Очков меньше.',
+    powerMod: 0.85,
+    radiusMod: 1.3,
     babyBonus: 0.25,
     workBonus: -0.15,
     energyCost: 0.8,

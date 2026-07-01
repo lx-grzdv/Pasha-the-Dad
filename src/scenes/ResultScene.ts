@@ -4,6 +4,7 @@ import { getOrCreatePlayerId } from '../services/playerStorage';
 import { createRunRecord, getLeaderboard } from '../services/leaderboard';
 import type { RunResult } from '../types/game';
 import { computeResultStatus, formatTime } from '../utils/resultStatus';
+import { UI, addBackdrop, addBodyText, addNeonButton, addPanel, addTag, addTitle } from '../ui/theme';
 
 export class ResultScene extends Phaser.Scene {
   private result!: RunResult;
@@ -20,26 +21,17 @@ export class ResultScene extends Phaser.Scene {
 
   create(): void {
     const cx = GAME_WIDTH / 2;
-    this.add.rectangle(cx, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x0a0a0a);
+    addBackdrop(this);
 
     const title = this.result.won ? 'Выжил!' : 'D[e]ad';
-    this.add
-      .text(cx, 60, title, {
-        fontFamily: '"Press Start 2P", monospace',
-        fontSize: '32px',
-        color: this.result.won ? '#39ff14' : '#ff4757',
-      })
+    const accent = this.result.won ? UI.colors.mint : UI.colors.danger;
+    addTitle(this, cx, 70, title, '32px', this.result.won ? UI.colors.mintText : UI.colors.dangerText);
+    addTag(this, cx, 118, this.result.won ? 'день пережит' : 'день победил', accent);
+
+    addBodyText(this, cx, 158, this.result.resultStatus, '16px', UI.colors.text, 'center')
       .setOrigin(0.5);
 
-    this.add
-      .text(cx, 120, this.result.resultStatus, {
-        fontSize: '16px',
-        color: '#fff',
-        align: 'center',
-        fontFamily: 'system-ui, sans-serif',
-      })
-      .setOrigin(0.5);
-
+    addPanel(this, cx, 284, 600, 214, { accent, depth: 0 });
     const lines = [
       `Время: ${formatTime(this.result.survivalTime)} / ${formatTime(180)}`,
       `Score: ${this.result.score}`,
@@ -50,19 +42,28 @@ export class ResultScene extends Phaser.Scene {
       `Работа: ${this.result.workFinal}%  Энергия: ${this.result.energyFinal}%`,
     ];
 
-    this.add
-      .text(cx, 220, lines.join('\n'), {
-        fontSize: '14px',
-        color: '#ccc',
-        align: 'center',
-        lineSpacing: 8,
-        fontFamily: 'system-ui, sans-serif',
-      })
+    addBodyText(this, cx, 284, lines.join('\n'), '15px', UI.colors.muted, 'center')
+      .setLineSpacing(8)
       .setOrigin(0.5);
 
-    this.createButton(cx - 150, 420, 'В РЕЙТИНГ', () => this.submitAndGoLeaderboard());
-    this.createButton(cx, 420, 'ЕЩЁ РАЗ', () => this.scene.start('MenuScene'));
-    this.createButton(cx + 150, 420, 'МЕНЮ', () => this.scene.start('MenuScene'));
+    addNeonButton(this, cx - 170, 458, 'В РЕЙТИНГ', () => this.submitAndGoLeaderboard(), {
+      width: 176,
+      accent: UI.colors.amber,
+      fontSize: '10px',
+    });
+    addNeonButton(this, cx, 458, 'ЕЩЁ РАЗ', () => this.scene.start('MenuScene'), {
+      width: 144,
+      accent: UI.colors.mint,
+      fontSize: '10px',
+    });
+    addNeonButton(this, cx + 156, 458, 'МЕНЮ', () => this.scene.start('MenuScene'), {
+      width: 120,
+      accent: UI.colors.blue,
+      fontSize: '10px',
+    });
+
+    addBodyText(this, cx, GAME_HEIGHT - 48, 'Enter — ещё раз', '12px', UI.colors.faint, 'center').setOrigin(0.5);
+    this.input.keyboard?.once('keydown-ENTER', () => this.scene.start('MenuScene'));
   }
 
   private async submitAndGoLeaderboard(): Promise<void> {
@@ -92,17 +93,4 @@ export class ResultScene extends Phaser.Scene {
     this.scene.start('LeaderboardScene');
   }
 
-  private createButton(x: number, y: number, label: string, onClick: () => void): void {
-    this.add
-      .text(x, y, label, {
-        fontFamily: '"Press Start 2P", monospace',
-        fontSize: '11px',
-        color: '#000',
-        backgroundColor: '#39ff14',
-        padding: { x: 12, y: 10 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', onClick);
-  }
 }

@@ -6,7 +6,7 @@ type FootKind = 'leftFoot' | 'rightFoot';
 
 export interface ResolvedLimb {
   limb: LimbKind;
-  /** Для ног — какая нога анимается (пах бьёт от groin, но нога видна) */
+  /** Для ног — какая нога анимируется (пах бьёт от groin, но нога видна) */
   footSide: FootKind | null;
   angle: number;
   anchorX: number;
@@ -14,7 +14,6 @@ export interface ResolvedLimb {
 }
 
 const FOOT_LIMBS: FootKind[] = ['leftFoot', 'rightFoot'];
-const HAND_LIMBS: LimbKind[] = ['leftHand', 'rightHand'];
 
 function cfgFor(limb: LimbKind) {
   if (limb === 'leftFoot' || limb === 'rightFoot') return LIMB.groin;
@@ -30,7 +29,10 @@ export class LimbHitbox {
     this.graphics.setDepth(15);
   }
 
-  /** Выбирает конкретную конечность по точке прицела и занятости рук */
+  /**
+   * Детерминированный выбор конечности — правило объясняется одной фразой:
+   * прицел выше пояса — руки (если свободны), ниже пояса — ноги. Сторона — по прицелу.
+   */
   resolve(
     pashaX: number,
     pashaY: number,
@@ -38,53 +40,37 @@ export class LimbHitbox {
     aimY: number,
     handState: HandState
   ): ResolvedLimb {
-    const px = aimX;
-    const py = aimY;
-    const pointerLeft = px < pashaX;
-
-    const candidates: { limb: LimbKind; footSide: FootKind | null; score: number }[] = [];
-
-    const canLeftHand = handState.leftHandFree || handState.inBathroom;
-    const canRightHand = handState.rightHandFree || handState.inBathroom;
-    const canBothHands = handState.inBathroom;
-
-    if (canBothHands) {
-      candidates.push({ limb: 'bothHands', footSide: null, score: this.aimScore(pashaX, pashaY, px, py, 'bothHands', -0.3) });
-    }
-    if (canLeftHand && !canBothHands) {
-      candidates.push({ limb: 'leftHand', footSide: null, score: this.aimScore(pashaX, pashaY, px, py, 'leftHand', pointerLeft ? 0.15 : -0.2) });
-    }
-    if (canRightHand && !canBothHands) {
-      candidates.push({ limb: 'rightHand', footSide: null, score: this.aimScore(pashaX, pashaY, px, py, 'rightHand', pointerLeft ? -0.2 : 0.15) });
-    }
-
+    const pointerLeft = aimX < pashaX;
+    const beltY = pashaY + 14;
+    const headY = pashaY - 58;
     const footSide: FootKind = pointerLeft ? 'leftFoot' : 'rightFoot';
-    candidates.push({
-      limb: footSide,
-      footSide,
-      score: this.aimScore(pashaX, pashaY, px, py, footSide, handState.inBathroom ? -0.05 : 0.1),
-    });
 
-    candidates.sort((a, b) => b.score - a.score);
-
-    let pick = candidates[0];
-    if (canBothHands && (pick.limb === 'leftFoot' || pick.limb === 'rightFoot')) {
-      const both = candidates.find((c) => c.limb === 'bothHands');
-      if (both && both.score > pick.score * 0.85 && py < pashaY + 10) pick = both;
+    let limb: LimbKind = footSide;
+    if (aimY < headY) {
+      // Совсем вверх — хэдбатт, работает даже с занятыми руками
+      limb = 'head';
+    } else if (aimY < beltY) {
+      if (handState.inBathroom) {
+        limb = 'bothHands';
+      } else if (pointerLeft && handState.leftHandFree) {
+        limb = 'leftHand';
+      } else if (!pointerLeft && handState.rightHandFree) {
+        limb = 'rightHand';
+      } else if (handState.leftHandFree) {
+        limb = 'leftHand';
+      } else if (handState.rightHandFree) {
+        limb = 'rightHand';
+      }
     }
-    if ((canLeftHand || canRightHand) && !canBothHands) {
-      const handPick = candidates.find((c) => HAND_LIMBS.includes(c.limb));
-      if (handPick && handPick.score > pick.score * 0.9 && py < pashaY + 30) pick = handPick;
-    }
 
-    const cfg = cfgFor(pick.limb);
+    const cfg = cfgFor(limb);
     const anchorX = pashaX + cfg.anchorX;
     const anchorY = pashaY + cfg.anchorY;
-    const angle = Phaser.Math.Angle.Between(anchorX, anchorY, px, py);
+    const angle = Phaser.Math.Angle.Between(anchorX, anchorY, aimX, aimY);
 
     const resolved: ResolvedLimb = {
-      limb: pick.limb,
-      footSide: pick.footSide,
+      limb,
+      footSide: limb === footSide ? footSide : null,
       angle,
       anchorX,
       anchorY,
@@ -93,36 +79,32 @@ export class LimbHitbox {
     return resolved;
   }
 
-  private aimScore(
-    pashaX: number,
-    pashaY: number,
-    px: number,
-    py: number,
-    limb: LimbKind,
-    bias: number
-  ): number {
-    const cfg = cfgFor(limb);
-    const ax = pashaX + cfg.anchorX;
-    const ay = pashaY + cfg.anchorY;
-    const dist = Phaser.Math.Distance.Between(ax, ay, px, py);
-    const angleToPointer = Phaser.Math.Angle.Between(ax, ay, px, py);
-    const distScore = 1 / (1 + dist * 0.004);
-    const angleScore = Math.cos(angleToPointer - (limb === 'leftFoot' ? Math.PI * 0.75 : limb === 'rightFoot' ? Math.PI * 0.25 : 0));
-    return distScore + angleScore * 0.3 + bias;
-  }
-
+  /** В покое — тонкий ретикл в точке удара; арка появляется только в момент свинга */
   draw(resolved: ResolvedLimb, swinging: boolean): void {
     const limb = resolved.limb;
     const cfg = cfgFor(limb);
     this.graphics.clear();
 
     const isFoot = FOOT_LIMBS.includes(limb as FootKind);
-    const color = swinging ? 0x39ff14 : isFoot ? 0xff6b9d : 0xffffff;
-    const alpha = swinging ? 0.9 : 0.35;
-    const radius = cfg.radius * (swinging ? 1.15 : 1);
+    const color = swinging ? 0x7dff3a : limb === 'head' ? 0xffd166 : isFoot ? 0xff5fa2 : 0x4cc9f0;
+    const hit = this.getHitCircle(resolved);
 
-    this.graphics.lineStyle(3, color, alpha);
-    this.graphics.fillStyle(color, alpha * 0.3);
+    if (!swinging) {
+      this.graphics.lineStyle(2, color, 0.55);
+      this.graphics.strokeCircle(hit.x, hit.y, 9);
+      const cross = 5;
+      this.graphics.lineBetween(hit.x - 9 - cross, hit.y, hit.x - 9 + 2, hit.y);
+      this.graphics.lineBetween(hit.x + 9 - 2, hit.y, hit.x + 9 + cross, hit.y);
+      this.graphics.lineBetween(hit.x, hit.y - 9 - cross, hit.x, hit.y - 9 + 2);
+      this.graphics.lineBetween(hit.x, hit.y + 9 - 2, hit.x, hit.y + 9 + cross);
+      this.graphics.fillStyle(color, 0.5);
+      this.graphics.fillCircle(hit.x, hit.y, 2);
+      return;
+    }
+
+    const radius = cfg.radius * 1.15;
+    this.graphics.lineStyle(3, color, 0.9);
+    this.graphics.fillStyle(color, 0.26);
 
     const startAngle = resolved.angle - cfg.arc / 2;
     const endAngle = resolved.angle + cfg.arc / 2;
@@ -133,17 +115,11 @@ export class LimbHitbox {
     this.graphics.closePath();
     this.graphics.fillPath();
     this.graphics.strokePath();
-
-    const hit = this.getHitCircle(resolved);
-    if (isFoot) {
-      this.graphics.fillStyle(0xff6b9d, swinging ? 0.75 : 0.45);
-      this.graphics.fillCircle(hit.x, hit.y, hit.r * 0.55);
-    }
   }
 
   flashHit(resolved: ResolvedLimb): void {
     const hit = this.getHitCircle(resolved);
-    const flash = this.graphics.scene.add.circle(hit.x, hit.y, hit.r, 0x39ff14, 0.6);
+    const flash = this.graphics.scene.add.circle(hit.x, hit.y, hit.r, 0x7dff3a, 0.6);
     flash.setDepth(20);
     this.graphics.scene.tweens.add({
       targets: flash,

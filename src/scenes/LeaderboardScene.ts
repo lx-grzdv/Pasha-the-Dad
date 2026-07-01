@@ -5,6 +5,7 @@ import { getLeaderboard } from '../services/leaderboard';
 import type { RunRecord } from '../services/leaderboard';
 import { HybridLeaderboard } from '../services/leaderboard/HybridLeaderboard';
 import { formatTime } from '../utils/resultStatus';
+import { UI, addBackdrop, addBodyText, addNeonButton, addPanel, addTag, addTitle } from '../ui/theme';
 
 export class LeaderboardScene extends Phaser.Scene {
   constructor() {
@@ -13,73 +14,59 @@ export class LeaderboardScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     const cx = GAME_WIDTH / 2;
-    this.add.rectangle(cx, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x0a0a0a);
+    addBackdrop(this);
 
-    this.add
-      .text(cx, 40, 'Top D[e]ads', {
-        fontFamily: '"Press Start 2P", monospace',
-        fontSize: '22px',
-        color: '#39ff14',
-      })
-      .setOrigin(0.5);
+    addTitle(this, cx, 48, 'Top D[e]ads', '24px');
 
     const lb = getLeaderboard();
     const isGlobal =
       lb instanceof HybridLeaderboard ? await lb.isGlobal() : import.meta.env.VITE_LEADERBOARD_ADAPTER === 'remote';
 
-    this.add
-      .text(
-        cx,
-        75,
-        isGlobal ? 'Глобальный рейтинг — все игроки' : 'Рейтинг на этом устройстве',
-        {
-          fontSize: '11px',
-          color: '#666',
-          fontFamily: 'system-ui, sans-serif',
-        }
-      )
-      .setOrigin(0.5);
+    addTag(this, cx, 86, isGlobal ? 'глобальный рейтинг' : 'локальный рейтинг', UI.colors.amber);
     const top = await lb.getTopRuns(10);
     const today = await lb.getTodayTopRuns(5);
     const best = await lb.getPlayerBest(getOrCreatePlayerId());
 
-    let y = 110;
-    this.add.text(40, y, '— Все время —', { fontSize: '12px', color: '#ffd93d' });
-    y += 25;
-    y = this.renderList(top, 40, y, 10);
-    y += 15;
+    addPanel(this, cx, 312, 780, 390, { accent: UI.colors.blue, depth: 0 });
 
-    this.add.text(40, y, '— Сегодня —', { fontSize: '12px', color: '#ffd93d' });
-    y += 25;
-    y = this.renderList(today, 40, y, 5);
-    y += 15;
+    let y = 132;
+    addBodyText(this, 112, y, 'Все время', '13px', UI.colors.amberText);
+    y += 26;
+    y = this.renderList(top, 112, y, 10);
+    y += 18;
+
+    addBodyText(this, 112, y, 'Сегодня', '13px', UI.colors.amberText);
+    y += 26;
+    y = this.renderList(today, 112, y, 5);
+    y += 18;
 
     if (best) {
-      this.add.text(40, y, '— Твой лучший —', { fontSize: '12px', color: '#4dabf7' });
-      y += 25;
-      this.add.text(40, y, this.formatRow(best, 0), {
-        fontSize: '12px',
-        color: '#fff',
-        fontFamily: 'system-ui, sans-serif',
-      });
+      addBodyText(this, 112, y, 'Твой лучший', '13px', UI.colors.blueText);
+      y += 26;
+      addBodyText(this, 112, y, this.formatRow(best, 0), '13px', UI.colors.text);
     }
 
-    this.createButton(cx - 100, GAME_HEIGHT - 50, 'ИГРАТЬ', () => this.scene.start('MenuScene'));
-    this.createButton(cx + 100, GAME_HEIGHT - 50, 'МЕНЮ', () => this.scene.start('MenuScene'));
+    addNeonButton(this, cx - 96, GAME_HEIGHT - 52, 'ИГРАТЬ', () => this.scene.start('MenuScene'), {
+      width: 150,
+      accent: UI.colors.mint,
+      fontSize: '11px',
+    });
+    addNeonButton(this, cx + 96, GAME_HEIGHT - 52, 'МЕНЮ', () => this.scene.start('MenuScene'), {
+      width: 128,
+      accent: UI.colors.blue,
+      fontSize: '11px',
+    });
   }
 
   private renderList(runs: RunRecord[], x: number, startY: number, max: number): number {
     let y = startY;
     if (runs.length === 0) {
-      this.add.text(x, y, 'Пока пусто — сыграй первым!', { fontSize: '12px', color: '#888' });
+      addBodyText(this, x, y, 'Пока пусто — сыграй первым!', '12px', UI.colors.faint);
       return y + 20;
     }
     runs.slice(0, max).forEach((r, i) => {
-      this.add.text(x, y, this.formatRow(r, i + 1), {
-        fontSize: '11px',
-        color: '#ccc',
-        fontFamily: 'system-ui, sans-serif',
-      });
+      const color = i < 3 ? UI.colors.text : UI.colors.muted;
+      addBodyText(this, x, y, this.formatRow(r, i + 1), '12px', color);
       y += 18;
     });
     return y;
@@ -90,17 +77,4 @@ export class LeaderboardScene extends Phaser.Scene {
     return `${prefix}${r.playerName} — ${r.score} pts (${formatTime(r.survivalTime)})`;
   }
 
-  private createButton(x: number, y: number, label: string, onClick: () => void): void {
-    this.add
-      .text(x, y, label, {
-        fontFamily: '"Press Start 2P", monospace',
-        fontSize: '12px',
-        color: '#000',
-        backgroundColor: '#39ff14',
-        padding: { x: 14, y: 10 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', onClick);
-  }
 }

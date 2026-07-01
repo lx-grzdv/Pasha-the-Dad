@@ -1,45 +1,54 @@
 import Phaser from 'phaser';
-import { COLORS } from '../config/gameConfig';
 import type { LimbKind } from '../types/game';
+import { PASHA_TEXTURES, ensurePashaTextures, type PashaMood } from './pixelArt';
 
+/**
+ * Пиксельный Паша: голова с тремя состояниями лица, футболка с принтом,
+ * малыш и дочка прямо в руках. Все текстуры генерируются кодом.
+ */
 export class PashaVisual {
   container: Phaser.GameObjects.Container;
-  private body: Phaser.GameObjects.Rectangle;
-  private head: Phaser.GameObjects.Rectangle;
-  private leftArm: Phaser.GameObjects.Rectangle;
-  private rightArm: Phaser.GameObjects.Rectangle;
-  private leftLeg: Phaser.GameObjects.Rectangle;
-  private rightLeg: Phaser.GameObjects.Rectangle;
-  private leftLabel: Phaser.GameObjects.Text;
-  private rightLabel: Phaser.GameObjects.Text;
+  private body: Phaser.GameObjects.Image;
+  private head: Phaser.GameObjects.Image;
+  private leftArm: Phaser.GameObjects.Image;
+  private rightArm: Phaser.GameObjects.Image;
+  private leftLeg: Phaser.GameObjects.Image;
+  private rightLeg: Phaser.GameObjects.Image;
   private bathroomIcon: Phaser.GameObjects.Text;
   private baseY: number;
   private swinging = false;
+  private mood: PashaMood = 'ok';
+  private leftFree = false;
+  private rightFree = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.baseY = y;
-    this.body = scene.add.rectangle(0, 10, 50, 70, COLORS.pashaBody);
-    this.head = scene.add.rectangle(0, -35, 40, 40, COLORS.pashaHead);
-    this.leftArm = scene.add.rectangle(-35, 0, 20, 50, 0x7986cb);
-    this.rightArm = scene.add.rectangle(35, 0, 20, 50, 0x7986cb);
-    this.leftLeg = scene.add.rectangle(-14, 48, 18, 36, 0x3949ab);
-    this.rightLeg = scene.add.rectangle(14, 48, 18, 36, 0x3949ab);
-    this.leftLabel = scene.add.text(-35, 0, '👶', { fontSize: '16px' }).setOrigin(0.5);
-    this.rightLabel = scene.add.text(35, 0, '🧒', { fontSize: '16px' }).setOrigin(0.5);
+    ensurePashaTextures(scene);
+
+    const shadow = scene.add.ellipse(0, 58, 92, 18, 0x000000, 0.4);
+
+    this.body = scene.add.image(0, 6, PASHA_TEXTURES.torso);
+    this.head = scene.add.image(0, -34, PASHA_TEXTURES.headOk);
+
+    this.leftArm = scene.add.image(-24, -8, PASHA_TEXTURES.armBaby).setOrigin(0.5, 0.12);
+    this.rightArm = scene.add.image(24, -8, PASHA_TEXTURES.armDaughter).setOrigin(0.5, 0.12).setFlipX(true);
+
+    this.leftLeg = scene.add.image(-10, 22, PASHA_TEXTURES.leg).setOrigin(0.5, 0.08);
+    this.rightLeg = scene.add.image(10, 22, PASHA_TEXTURES.leg).setOrigin(0.5, 0.08).setFlipX(true);
+
     this.bathroomIcon = scene.add
-      .text(0, -60, '🚽', { fontSize: '20px' })
+      .text(0, -68, '🚽', { fontSize: '20px' })
       .setOrigin(0.5)
       .setVisible(false);
 
     this.container = scene.add.container(x, y, [
-      this.body,
-      this.head,
-      this.leftArm,
-      this.rightArm,
+      shadow,
       this.leftLeg,
       this.rightLeg,
-      this.leftLabel,
-      this.rightLabel,
+      this.body,
+      this.leftArm,
+      this.rightArm,
+      this.head,
       this.bathroomIcon,
     ]);
     this.container.setDepth(10);
@@ -49,13 +58,31 @@ export class PashaVisual {
     this.container.setPosition(x, y);
   }
 
+  /** Лицо реагирует на состояние: бодрый → мешки под глазами → почти d[e]ad */
+  setMoodByEnergy(energy: number): void {
+    const mood: PashaMood = energy > 55 ? 'ok' : energy > 20 ? 'tired' : 'dead';
+    this.setMood(mood);
+  }
+
+  setMood(mood: PashaMood): void {
+    if (this.mood === mood) return;
+    this.mood = mood;
+    const key =
+      mood === 'ok' ? PASHA_TEXTURES.headOk : mood === 'tired' ? PASHA_TEXTURES.headTired : PASHA_TEXTURES.headDead;
+    this.head.setTexture(key);
+  }
+
   updateVisuals(leftFree: boolean, rightFree: boolean, inBathroom: boolean): void {
-    this.leftArm.setFillStyle(leftFree ? 0x39ff14 : 0x7986cb);
-    this.rightArm.setFillStyle(rightFree ? 0x39ff14 : 0x7986cb);
-    this.leftLabel.setVisible(!leftFree);
-    this.rightLabel.setVisible(!rightFree);
+    if (leftFree !== this.leftFree) {
+      this.leftFree = leftFree;
+      this.leftArm.setTexture(leftFree ? PASHA_TEXTURES.armFree : PASHA_TEXTURES.armBaby);
+    }
+    if (rightFree !== this.rightFree) {
+      this.rightFree = rightFree;
+      this.rightArm.setTexture(rightFree ? PASHA_TEXTURES.armFree : PASHA_TEXTURES.armDaughter);
+    }
     this.bathroomIcon.setVisible(inBathroom);
-    this.container.setAlpha(inBathroom ? 0.5 : 1);
+    this.container.setAlpha(inBathroom ? 0.55 : 1);
   }
 
   /** Анимация удара конкретной конечностью */
@@ -64,7 +91,7 @@ export class PashaVisual {
     this.swinging = true;
 
     const reset = () => {
-      this.body.setPosition(0, 10);
+      this.body.setPosition(0, 6);
       this.body.setScale(1, 1);
       this.leftLeg.setAngle(0);
       this.rightLeg.setAngle(0);
@@ -75,6 +102,28 @@ export class PashaVisual {
 
     if (limb === 'leftFoot' || limb === 'rightFoot') {
       this.playGroinThrust(limb, scene, reset);
+      return;
+    }
+
+    if (limb === 'head') {
+      scene.tweens.add({
+        targets: this.head,
+        y: -46,
+        angle: Phaser.Math.Between(-14, 14),
+        duration: 70,
+        ease: 'Quad.easeOut',
+        yoyo: true,
+        onComplete: () => {
+          this.head.setPosition(0, -34).setAngle(0);
+          reset();
+        },
+      });
+      scene.tweens.add({
+        targets: this.body,
+        scaleY: 0.94,
+        duration: 70,
+        yoyo: true,
+      });
       return;
     }
 
@@ -109,12 +158,12 @@ export class PashaVisual {
   /** MJ-style pelvic thrust — пах вперёд, нога в сторону */
   private playGroinThrust(limb: LimbKind, scene: Phaser.Scene, reset: () => void): void {
     const leg = limb === 'leftFoot' ? this.leftLeg : this.rightLeg;
-    const kickAngle = limb === 'leftFoot' ? -28 : 28;
+    const kickAngle = limb === 'leftFoot' ? -32 : 32;
 
     scene.tweens.add({
       targets: this.body,
-      y: 18,
-      scaleY: 1.08,
+      y: 14,
+      scaleY: 1.1,
       duration: 70,
       ease: 'Quad.easeOut',
       yoyo: true,
@@ -127,6 +176,47 @@ export class PashaVisual {
       ease: 'Back.easeOut',
       yoyo: true,
       onComplete: reset,
+    });
+  }
+
+  /** Интро: Паша вбегает на позицию, семеня ногами */
+  playRunIn(scene: Phaser.Scene, toX: number, duration: number, onComplete: () => void): void {
+    const legL = scene.tweens.add({
+      targets: this.leftLeg,
+      angle: { from: -26, to: 26 },
+      duration: 110,
+      yoyo: true,
+      repeat: -1,
+    });
+    const legR = scene.tweens.add({
+      targets: this.rightLeg,
+      angle: { from: 26, to: -26 },
+      duration: 110,
+      yoyo: true,
+      repeat: -1,
+    });
+    const bob = scene.tweens.add({
+      targets: [this.body, this.head],
+      y: '+=3',
+      duration: 110,
+      yoyo: true,
+      repeat: -1,
+    });
+    scene.tweens.add({
+      targets: this.container,
+      x: toX,
+      duration,
+      ease: 'Sine.easeOut',
+      onComplete: () => {
+        legL.stop();
+        legR.stop();
+        bob.stop();
+        this.leftLeg.setAngle(0);
+        this.rightLeg.setAngle(0);
+        this.body.setPosition(0, 6);
+        this.head.setPosition(0, -34);
+        onComplete();
+      },
     });
   }
 

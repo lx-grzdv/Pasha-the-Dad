@@ -21,7 +21,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #0a0a0a;
+        background: #050608;
       }
       #game-container {
         width: 100%;
@@ -29,6 +29,23 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 16px;
+      }
+      canvas {
+        border-radius: 8px;
+        box-shadow: 0 0 0 2px rgba(125, 255, 58, 0.35);
+        /* Курсор-членик: остриё — в точке (5,5), им и целимся */
+        cursor:
+          url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='28'%20height='28'%3E%3Cline%20x1='5'%20y1='5'%20x2='18'%20y2='18'%20stroke='%233a2b1c'%20stroke-width='12'%20stroke-linecap='round'/%3E%3Cline%20x1='5'%20y1='5'%20x2='18'%20y2='18'%20stroke='%23f2c793'%20stroke-width='9'%20stroke-linecap='round'/%3E%3Ccircle%20cx='21'%20cy='14'%20r='6'%20fill='%233a2b1c'/%3E%3Ccircle%20cx='14'%20cy='21'%20r='6'%20fill='%233a2b1c'/%3E%3Ccircle%20cx='21'%20cy='14'%20r='4.5'%20fill='%23f2c793'/%3E%3Ccircle%20cx='14'%20cy='21'%20r='4.5'%20fill='%23f2c793'/%3E%3Ccircle%20cx='5'%20cy='5'%20r='5'%20fill='%233a2b1c'/%3E%3Ccircle%20cx='5'%20cy='5'%20r='3.8'%20fill='%23ffb0bd'/%3E%3C/svg%3E") 5 5,
+          crosshair;
+      }
+      @media (max-width: 760px), (max-height: 540px) {
+        #game-container {
+          padding: 0;
+        }
+        canvas {
+          border-radius: 0;
+        }
       }
     </style>
   </head>

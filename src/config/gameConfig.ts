@@ -6,18 +6,18 @@ export const GAME_HEIGHT = 640;
 export const RUN_DURATION_SEC = 180;
 
 export const COLORS = {
-  bg: 0x0a0a0a,
-  bgGradient: 0x1a0a2e,
-  baby: 0xff6b9d,
-  daughter: 0xffd93d,
-  work: 0x4dabf7,
-  chaos: 0xff922b,
-  pashaBody: 0x5c6bc0,
+  bg: 0x08090c,
+  bgGradient: 0x08090c,
+  baby: 0xff5fa2,
+  daughter: 0xffd166,
+  work: 0x4cc9f0,
+  chaos: 0xff8a4c,
+  pashaBody: 0x6d5dfc,
   pashaHead: 0xffcc80,
-  uiText: '#ffffff',
-  uiAccent: '#39ff14',
-  uiDanger: '#ff4757',
-  meterBg: 0x333333,
+  uiText: '#f7f3ea',
+  uiAccent: '#39ffb6',
+  uiDanger: '#ff3f5f',
+  meterBg: 0x232131,
 };
 
 /** Якорь и параметры каждой конечности относительно центра Паши */
@@ -29,6 +29,8 @@ export const LIMB = {
   leftHand: { anchorX: -38, anchorY: 2, radius: 68, arc: Math.PI * 0.85, power: 1.0, hitR: 36 },
   rightHand: { anchorX: 38, anchorY: 2, radius: 68, arc: Math.PI * 0.85, power: 1.0, hitR: 36 },
   bothHands: { anchorX: 0, anchorY: -8, radius: 88, arc: Math.PI * 1.15, power: 1.3, hitR: 42 },
+  /** Хэдбатт: руки заняты — башка свободна. Работает всегда */
+  head: { anchorX: 0, anchorY: -34, radius: 54, arc: Math.PI * 0.7, power: 0.9, hitR: 30 },
 } as const;
 
 export const COOLDOWNS = {
@@ -45,9 +47,16 @@ export const DURATIONS = {
 
 export const PILE = {
   maxVisible: 40,
-  sinkPerMiss: 3,
+  sinkPerMiss: 5,
   missInterval: 2,
 } as const;
+
+/** Именованные мини-волны: узнаваемые пики сложности с фразой на экране */
+export const WAVES = [
+  { atSec: 45, label: 'СОЗВОН-ПЯТИМИНУТКА', type: 'work', count: 4 },
+  { atSec: 95, label: 'ЧАС КУРЬЕРОВ', type: 'chaos', count: 4 },
+  { atSec: 140, label: 'ДЕТСКИЙ БУНТ', type: 'baby', count: 5 },
+] as const;
 
 export const COMBO_THRESHOLDS = [
   { count: 5, multiplier: 1.2 },

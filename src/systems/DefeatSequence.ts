@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { TASK_DEFINITIONS, type TaskDefinition } from '../config/tasks';
+import { UI } from '../ui/theme';
 import type { TaskPileSystem } from './TaskPileSystem';
 
 export class DefeatSequence {
@@ -34,27 +35,28 @@ export class DefeatSequence {
     );
     overlay.setDepth(100);
 
-    // Avalanche ghost tasks
-    for (let i = 0; i < 8; i++) {
+    // Dense avalanche: by the time the title appears, Pasha should be visibly buried.
+    for (let i = 0; i < 24; i++) {
       const def = TASK_DEFINITIONS[i % TASK_DEFINITIONS.length];
-      this.scene.time.delayedCall(i * 80, () => {
-        this.pile.addStuck(def, Phaser.Math.Between(-80, 80));
+      this.scene.time.delayedCall(i * 36, () => {
+        this.pile.addStuck(def, Phaser.Math.Between(-130, 130));
       });
     }
 
     const deadText = this.scene.add.text(centerX, centerY - 80, 'D[e]ad', {
-      fontFamily: '"Press Start 2P", monospace',
+      fontFamily: UI.font.pixel,
       fontSize: '36px',
-      color: '#39ff14',
+      color: UI.colors.dangerText,
     });
     deadText.setOrigin(0.5);
+    deadText.setShadow(4, 4, '#000000', 0, true, true);
     deadText.setAlpha(0);
     deadText.setDepth(101);
 
     const subText = this.scene.add.text(centerX, centerY - 30, 'Завалило делами', {
       fontSize: '18px',
-      color: '#ffffff',
-      fontFamily: 'system-ui, sans-serif',
+      color: UI.colors.text,
+      fontFamily: UI.font.body,
     });
     subText.setOrigin(0.5);
     subText.setAlpha(0);
@@ -64,19 +66,19 @@ export class DefeatSequence {
       targets: deadText,
       alpha: 1,
       duration: 400,
-      delay: 600,
+      delay: 760,
     });
     this.scene.tweens.add({
       targets: subText,
       alpha: 1,
       duration: 400,
-      delay: 700,
+      delay: 860,
     });
     this.scene.tweens.add({
       targets: overlay,
       alpha: 0.7,
       duration: 400,
-      delay: 600,
+      delay: 760,
     });
 
     this.scene.time.delayedCall(2000, () => {

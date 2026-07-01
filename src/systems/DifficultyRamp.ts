@@ -4,21 +4,16 @@ export interface SpawnParams {
   burst: number;
 }
 
+/**
+ * Плавная кривая сложности вместо трёх ступеней: интервал и скорость
+ * непрерывно растут до 150-й секунды, финал ощутимо жарче старта.
+ */
 export class DifficultyRamp {
   getSpawnParams(elapsedSec: number, chaos: number): SpawnParams {
-    let intervalMs = 2500;
-    let speed = 120;
-    let burst = 1;
-
-    if (elapsedSec >= 30) {
-      intervalMs = 2000;
-      speed = 140;
-    }
-    if (elapsedSec >= 90) {
-      intervalMs = 1500;
-      speed = 170;
-      burst = 2;
-    }
+    const t = Math.min(1, elapsedSec / 150);
+    let intervalMs = 2500 - 1350 * t;
+    let speed = 120 + 75 * t;
+    const burst = elapsedSec >= 90 ? 2 : 1;
 
     const chaosFactor = 1 - chaos * 0.05;
     intervalMs *= Math.max(0.5, chaosFactor);
