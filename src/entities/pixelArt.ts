@@ -111,18 +111,19 @@ const ARM_BABY = [
   '..PPPP..',
 ];
 
-/** Рука с дочкой (правая, зеркалится flipX): косички, глаза, платье, ножки */
-const ARM_DAUGHTER = [
-  'TTTT....',
-  '.SSS....',
-  '.SSS....',
+/** Дочка в полный рост: стоит рядом, левая рука поднята к папиной ладони */
+const DAUGHTER = [
   '.HHHHHH.',
   'HHSSSSHH',
   '.HSESEH.',
-  '..SSSS..',
+  'S.SSSS..',
+  'SAAAAAA.',
   '.AAAAAA.',
   'AAAAAAAA',
+  '.AAAAAA.',
   '..S..S..',
+  '..S..S..',
+  '.PP..PP.',
 ];
 
 /** Свободная рука — кулак готов к бою */
@@ -153,7 +154,7 @@ export const PASHA_TEXTURES = {
   headDead: 'pasha-head-dead',
   torso: 'pasha-torso',
   armBaby: 'pasha-arm-baby',
-  armDaughter: 'pasha-arm-daughter',
+  daughter: 'pasha-daughter',
   armFree: 'pasha-arm-free',
   leg: 'pasha-leg',
 } as const;
@@ -164,7 +165,7 @@ export function ensurePashaTextures(scene: Phaser.Scene): void {
   makePixelTexture(scene, PASHA_TEXTURES.headDead, HEAD_DEAD, PASHA_PALETTE);
   makePixelTexture(scene, PASHA_TEXTURES.torso, TORSO, PASHA_PALETTE);
   makePixelTexture(scene, PASHA_TEXTURES.armBaby, ARM_BABY, PASHA_PALETTE);
-  makePixelTexture(scene, PASHA_TEXTURES.armDaughter, ARM_DAUGHTER, PASHA_PALETTE);
+  makePixelTexture(scene, PASHA_TEXTURES.daughter, DAUGHTER, PASHA_PALETTE);
   makePixelTexture(scene, PASHA_TEXTURES.armFree, ARM_FREE, PASHA_PALETTE);
   makePixelTexture(scene, PASHA_TEXTURES.leg, LEG, PASHA_PALETTE);
 }

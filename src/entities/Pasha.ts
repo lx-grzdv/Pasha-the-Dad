@@ -12,6 +12,7 @@ export class PashaVisual {
   private head: Phaser.GameObjects.Image;
   private leftArm: Phaser.GameObjects.Image;
   private rightArm: Phaser.GameObjects.Image;
+  private daughter: Phaser.GameObjects.Image;
   private leftLeg: Phaser.GameObjects.Image;
   private rightLeg: Phaser.GameObjects.Image;
   private bathroomIcon: Phaser.GameObjects.Text;
@@ -31,7 +32,9 @@ export class PashaVisual {
     this.head = scene.add.image(0, -34, PASHA_TEXTURES.headOk);
 
     this.leftArm = scene.add.image(-24, -8, PASHA_TEXTURES.armBaby).setOrigin(0.5, 0.12);
-    this.rightArm = scene.add.image(24, -8, PASHA_TEXTURES.armDaughter).setOrigin(0.5, 0.12).setFlipX(true);
+    // Правая рука опущена к дочке, которая стоит рядом и держится за ладонь
+    this.rightArm = scene.add.image(24, -8, PASHA_TEXTURES.armFree).setOrigin(0.5, 0.12).setFlipX(true).setAngle(-16);
+    this.daughter = scene.add.image(46, 32, PASHA_TEXTURES.daughter);
 
     this.leftLeg = scene.add.image(-10, 22, PASHA_TEXTURES.leg).setOrigin(0.5, 0.08);
     this.rightLeg = scene.add.image(10, 22, PASHA_TEXTURES.leg).setOrigin(0.5, 0.08).setFlipX(true);
@@ -43,6 +46,7 @@ export class PashaVisual {
 
     this.container = scene.add.container(x, y, [
       shadow,
+      this.daughter,
       this.leftLeg,
       this.rightLeg,
       this.body,
@@ -79,7 +83,9 @@ export class PashaVisual {
     }
     if (rightFree !== this.rightFree) {
       this.rightFree = rightFree;
-      this.rightArm.setTexture(rightFree ? PASHA_TEXTURES.armFree : PASHA_TEXTURES.armDaughter);
+      // Дочь в саду — рука свободна и поднимается в стойку
+      this.daughter.setVisible(!rightFree);
+      if (!this.swinging) this.rightArm.setAngle(rightFree ? 0 : -16);
     }
     this.bathroomIcon.setVisible(inBathroom);
     this.container.setAlpha(inBathroom ? 0.55 : 1);
@@ -97,7 +103,7 @@ export class PashaVisual {
       this.leftLeg.setAngle(0);
       this.rightLeg.setAngle(0);
       this.leftArm.setAngle(0).setScale(1).setPosition(-24, -8);
-      this.rightArm.setAngle(0).setScale(1).setPosition(24, -8);
+      this.rightArm.setAngle(this.rightFree ? 0 : -16).setScale(1).setPosition(24, -8);
       this.swinging = false;
     };
 

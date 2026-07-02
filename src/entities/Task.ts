@@ -30,8 +30,8 @@ export class TaskEntity {
     this.hp = def.hp ?? 1;
     const color = getTaskColor(def.type);
     const heavy = this.hp > 1;
-    const w = heavy ? 88 : 76;
-    const h = heavy ? 48 : 42;
+    const w = heavy ? 74 : 62;
+    const h = heavy ? 66 : 58;
 
     const bg = scene.add.graphics();
     bg.fillStyle(UI.colors.bgDeep, 0.94);
@@ -43,17 +43,22 @@ export class TaskEntity {
       bg.strokeRect(-w / 2 + 4, -h / 2 + 4, w - 8, h - 8);
     }
 
-    const label = scene.add.text(0, 0, def.label, {
-      fontSize: '11px',
+    const icon = scene.add.text(0, heavy ? -12 : -10, def.icon, {
+      fontSize: heavy ? '30px' : '26px',
+    });
+    icon.setOrigin(0.5);
+
+    const label = scene.add.text(0, heavy ? 20 : 17, def.label, {
+      fontSize: '9px',
       color: `#${color.toString(16).padStart(6, '0')}`,
       fontFamily: UI.font.mono,
       align: 'center',
-      fixedWidth: w - 14,
-      wordWrap: { width: w - 14, useAdvancedWrap: true },
+      fixedWidth: w - 8,
+      wordWrap: { width: w - 8, useAdvancedWrap: true },
     });
     label.setOrigin(0.5);
 
-    this.container = scene.add.container(startX, startY, [bg, label]);
+    this.container = scene.add.container(startX, startY, [bg, icon, label]);
     this.container.setDepth(8);
     this.container.setAngle(Phaser.Math.Between(-7, 7));
 

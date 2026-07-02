@@ -39,25 +39,19 @@ export class TaskPileSystem {
 
     const color = getTaskColor(def.type);
     const bg = this.scene.add.graphics();
-    const cardWidth = Phaser.Math.Between(58, 74);
-    const cardHeight = Phaser.Math.Between(32, 42);
+    const cardSize = Phaser.Math.Between(30, 38);
     bg.fillStyle(UI.colors.bgDeep, 0.96);
-    bg.fillRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
+    bg.fillRect(-cardSize / 2, -cardSize / 2, cardSize, cardSize);
     bg.lineStyle(2, color, 0.8);
-    bg.strokeRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
-    const label = this.scene.add.text(0, 0, def.label, {
-      fontSize: '9px',
-      color: `#${color.toString(16).padStart(6, '0')}`,
-      fontFamily: UI.font.mono,
-      align: 'center',
-      fixedWidth: cardWidth - 14,
-      wordWrap: { width: cardWidth - 14, useAdvancedWrap: true },
+    bg.strokeRect(-cardSize / 2, -cardSize / 2, cardSize, cardSize);
+    const icon = this.scene.add.text(0, 0, def.icon, {
+      fontSize: `${cardSize - 14}px`,
     });
-    label.setOrigin(0.5);
+    icon.setOrigin(0.5);
 
     const scale = Phaser.Math.FloatBetween(0.88, 1.06);
     const finalAngle = slot.angle;
-    const container = this.scene.add.container(slot.x, slot.y - slot.drop, [bg, label]);
+    const container = this.scene.add.container(slot.x, slot.y - slot.drop, [bg, icon]);
     container.setDepth(this.getPileDepth(slot.row, slot.slot));
     container.setAngle(finalAngle + Phaser.Math.Between(-14, 14));
     container.setScale(scale * 0.76);
