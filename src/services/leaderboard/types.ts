@@ -21,11 +21,16 @@ export interface RunRecord {
   createdAt: string;
 }
 
+/** Фильтр по версии игры: 2D и 3D считают очки по-разному. */
+export interface LeaderboardQuery {
+  version?: string;
+}
+
 export interface LeaderboardService {
   submitRun(run: RunRecord): Promise<void>;
-  getTopRuns(limit: number): Promise<RunRecord[]>;
-  getTodayTopRuns(limit: number): Promise<RunRecord[]>;
-  getPlayerBest(playerId: string): Promise<RunRecord | null>;
+  getTopRuns(limit: number, query?: LeaderboardQuery): Promise<RunRecord[]>;
+  getTodayTopRuns(limit: number, query?: LeaderboardQuery): Promise<RunRecord[]>;
+  getPlayerBest(playerId: string, query?: LeaderboardQuery): Promise<RunRecord | null>;
 }
 
 export function createRunRecord(

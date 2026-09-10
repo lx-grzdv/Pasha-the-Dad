@@ -7,7 +7,8 @@ let instance: LeaderboardService | null = null;
 
 export function getLeaderboard(): LeaderboardService {
   if (!instance) {
-    const adapter = import.meta.env.VITE_LEADERBOARD_ADAPTER ?? 'hybrid';
+    // В dev нет serverless-функции: запрос к /api уронил бы Vite в оверлей ошибки.
+    const adapter = import.meta.env.VITE_LEADERBOARD_ADAPTER ?? (import.meta.env.DEV ? 'local' : 'hybrid');
     switch (adapter) {
       case 'local':
         instance = new LocalLeaderboard();
@@ -23,5 +24,5 @@ export function getLeaderboard(): LeaderboardService {
   return instance;
 }
 
-export type { LeaderboardService, RunRecord } from './types';
+export type { LeaderboardQuery, LeaderboardService, RunRecord } from './types';
 export { createRunRecord } from './types';

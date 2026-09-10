@@ -1,6 +1,6 @@
 import { LocalLeaderboard } from './LocalLeaderboard';
 import { RemoteLeaderboard } from './RemoteLeaderboard';
-import type { LeaderboardService, RunRecord } from './types';
+import type { LeaderboardQuery, LeaderboardService, RunRecord } from './types';
 
 /** Saves locally and syncs to server when Postgres is connected. */
 export class HybridLeaderboard implements LeaderboardService {
@@ -24,33 +24,33 @@ export class HybridLeaderboard implements LeaderboardService {
     }
   }
 
-  async getTopRuns(limit: number): Promise<RunRecord[]> {
+  async getTopRuns(limit: number, query?: LeaderboardQuery): Promise<RunRecord[]> {
     try {
-      const runs = await this.remote.getTopRuns(limit);
+      const runs = await this.remote.getTopRuns(limit, query);
       this.globalActive = true;
       return runs;
     } catch {
-      return this.local.getTopRuns(limit);
+      return this.local.getTopRuns(limit, query);
     }
   }
 
-  async getTodayTopRuns(limit: number): Promise<RunRecord[]> {
+  async getTodayTopRuns(limit: number, query?: LeaderboardQuery): Promise<RunRecord[]> {
     try {
-      const runs = await this.remote.getTodayTopRuns(limit);
+      const runs = await this.remote.getTodayTopRuns(limit, query);
       this.globalActive = true;
       return runs;
     } catch {
-      return this.local.getTodayTopRuns(limit);
+      return this.local.getTodayTopRuns(limit, query);
     }
   }
 
-  async getPlayerBest(playerId: string): Promise<RunRecord | null> {
+  async getPlayerBest(playerId: string, query?: LeaderboardQuery): Promise<RunRecord | null> {
     try {
-      const best = await this.remote.getPlayerBest(playerId);
+      const best = await this.remote.getPlayerBest(playerId, query);
       this.globalActive = true;
       return best;
     } catch {
-      return this.local.getPlayerBest(playerId);
+      return this.local.getPlayerBest(playerId, query);
     }
   }
 }

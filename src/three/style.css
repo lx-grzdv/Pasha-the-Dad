@@ -1,0 +1,211 @@
+:root {
+  font-family: ui-rounded, 'SF Pro Rounded', 'Trebuchet MS', Arial, sans-serif;
+  color: #edf4c8;
+  background: #173936;
+  font-synthesis: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; overflow: hidden; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.hidden { display: none !important; }
+
+#world { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+#ui { position: fixed; inset: 0; pointer-events: none; }
+.vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 78% 70% at 50% 46%, transparent 55%, #0b241f80 100%);
+}
+
+/* ---------- HUD ---------- */
+.hud {
+  position: absolute; left: 22px; top: 20px; width: 350px;
+  background: linear-gradient(140deg, #16302af0, #0f2620e0);
+  border: 1.5px solid #9fc64f80; border-radius: 20px; padding: 14px 18px 12px;
+  box-shadow: 0 12px 30px #06231d55, inset 0 1px 0 #ffffff14; backdrop-filter: blur(12px);
+}
+.brand {
+  display: flex; align-items: center; gap: 7px; white-space: nowrap;
+  font-size: 19px; font-weight: 900; letter-spacing: -.5px; margin-bottom: 8px; color: #f4f8dd;
+}
+.brand span { color: #c7e576; }
+.brand .logo { color: #a9d84a; font-size: 18px; }
+.brand .clock {
+  margin-left: auto; font-size: 22px; font-variant-numeric: tabular-nums;
+  background: #0b1d18; border-radius: 10px; padding: 3px 10px; color: #d7ec92;
+}
+.meter { display: grid; grid-template-columns: 66px 1fr 40px; gap: 9px; align-items: center; font-size: 12.5px; margin: 7px 0; }
+.meter b { font-variant-numeric: tabular-nums; font-size: 11px; text-align: right; color: #d5dfbd; }
+.bar { height: 9px; border-radius: 10px; background: #0b1d1899; overflow: hidden; box-shadow: inset 0 1px 2px #00000055; }
+.fill { height: 100%; border-radius: 10px; transition: width .18s linear; background: var(--color); box-shadow: inset 0 -2px 0 #0000001f; }
+.bar.low .fill { animation: blink .5s infinite alternate; }
+@keyframes blink { to { filter: brightness(1.5); } }
+
+.topright { position: absolute; right: 24px; top: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.pills { display: flex; gap: 8px; }
+.pill {
+  background: #142c25e6; border: 1px solid #c4d88955; border-radius: 12px; color: #e4edc7;
+  padding: 9px 13px; font-size: 14px; pointer-events: auto; backdrop-filter: blur(8px); min-width: 42px;
+}
+.pill:hover { background: #1d3d33; }
+.pill.off { opacity: .5; text-decoration: line-through; }
+.score { text-align: right; text-shadow: 0 2px 6px #14372c; }
+.score strong { display: block; font-size: 30px; line-height: 1.1; color: #f4f8dd; }
+.score small { font-size: 10px; letter-spacing: 2px; color: #c0cb9b; }
+.combo { color: #d7ec92; font-size: 13px; height: 18px; font-weight: 700; }
+.pace { font-size: 12px; font-weight: 800; height: 16px; letter-spacing: .3px; }
+.pace.ahead { color: #9ff29a; }
+.pace.behind { color: #ff9c8c; }
+.limb {
+  position: absolute; left: 50%; bottom: 116px; transform: translateX(-50%);
+  font-size: 10.5px; letter-spacing: 1.3px; text-transform: uppercase; color: #d7ec92;
+  background: #0f2620cc; border-radius: 20px; padding: 5px 12px; white-space: nowrap;
+}
+.limb:empty { display: none; }
+
+/* ---------- Способности ---------- */
+.abilities { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; pointer-events: auto; }
+.ability {
+  width: 160px; min-height: 82px; border: 1.5px solid #bfda70; border-radius: 18px;
+  background: linear-gradient(150deg, #1d3227f2, #14271de8); color: #dfebac;
+  display: grid; grid-template-columns: 38px 1fr; gap: 4px 8px; padding: 12px 16px; text-align: left;
+  box-shadow: 0 9px 25px #17372b50, inset 0 1px 0 #ffffff12; transition: transform .12s;
+}
+.ability:not(:disabled):hover { transform: translateY(-2px); }
+.ability kbd { font: 900 30px ui-rounded, 'Trebuchet MS', sans-serif; grid-row: span 2; align-self: center; color: #d7ec92; }
+.ability span { font-size: 24px; text-align: center; }
+.ability small { text-align: center; font-size: 10.5px; font-weight: 700; }
+.ability:disabled { border-color: #6f7f5c; color: #96a487; cursor: default; opacity: .8; }
+.ability.active { background: linear-gradient(150deg, #6f8f3a, #4f6d2c); color: #fff7d8; border-color: #e3f39a; }
+
+.bottom-note { position: absolute; bottom: 27px; left: 26px; color: #c0cb9b; font-size: 10px; line-height: 1.8; letter-spacing: 1.8px; text-transform: uppercase; }
+.switch { position: absolute; bottom: 29px; right: 27px; color: #c1d39b; text-decoration: none; font-size: 11px; letter-spacing: 1px; pointer-events: auto; }
+
+/* ---------- Карточки-заботы: сами карточки объёмные в сцене, здесь только зона клика ---------- */
+.task {
+  position: absolute; border: 0; background: transparent; padding: 0; border-radius: 16px;
+  pointer-events: auto; touch-action: manipulation; cursor: pointer; transform-origin: center;
+}
+.task:disabled { cursor: default; }
+.task:focus-visible { outline: 3px solid #fff; }
+
+/* ---------- Геймификация ---------- */
+.name { display: block; margin-bottom: 8px; }
+.name span { display: block; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: #b4cb80; margin-bottom: 4px; }
+.name input {
+  width: 100%; font: 800 14px ui-rounded, 'Trebuchet MS', Arial, sans-serif; color: #f4f8dd; background: #0b1d18;
+  border: 1px solid #7f956d; border-radius: 10px; padding: 9px 12px; pointer-events: auto;
+}
+.name input:focus { outline: 2px solid #d0e68b; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.mode { border: 1px solid #7f956d; background: #0b1d18; color: #d3dfbd; border-radius: 10px; padding: 7px 9px; text-align: left; font-weight: 800; font-size: 12px; }
+.mode small { display: block; font-weight: 600; font-size: 9.5px; color: #9fb184; margin-top: 2px; }
+.mode.on { background: #2f4a2c; border-color: #d0e68b; color: #f4f8dd; }
+.progress { font-size: 10.5px; color: #b4cb80; margin-bottom: 6px; }
+.rank { font-size: 13px; color: #d7ec92; margin: 4px 0; }
+.rank b { color: #f4f8dd; }
+.unlocked { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.unlocked span { background: #d0e68b; color: #223820; font-weight: 900; font-size: 11px; border-radius: 20px; padding: 4px 10px; animation: pop .5s; }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.15); } }
+.board { background: #0b1d18aa; border-radius: 12px; padding: 8px 10px; font-size: 12px; margin-top: 6px; max-height: 158px; overflow: auto; }
+.board-title { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: #b4cb80; margin-bottom: 4px; }
+.board-row { display: grid; grid-template-columns: 22px 1fr auto auto; gap: 8px; align-items: baseline; padding: 2px 0; color: #d3dfbd; }
+.board-row span { color: #9fb184; font-weight: 800; }
+.board-row b { color: #f4f8dd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-row i { font-style: normal; font-size: 10px; color: #9fb184; }
+.board-row em { font-style: normal; font-weight: 900; color: #d7ec92; font-variant-numeric: tabular-nums; }
+.board-row.me { background: #2f4a2c; border-radius: 6px; padding: 2px 4px; margin: 0 -4px; }
+.board-empty { color: #9fb184; }
+
+/* ---------- Оверлеи ---------- */
+.splash {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(460px, calc(100vw - 30px)); background: #142c25f2; border: 1px solid #c0d87a88;
+  border-radius: 26px; padding: 26px 28px; box-shadow: 0 25px 100px #0b281b90; backdrop-filter: blur(18px); pointer-events: auto;
+}
+.splash h1 { font-size: 29px; line-height: 1.05; letter-spacing: -.8px; margin: 8px 0 12px; color: #f4f8dd; }
+.splash p { font-size: 13.5px; line-height: 1.55; color: #d3dfbd; margin: 0 0 6px; }
+.splash .result { font-size: 15px; color: #f4f8dd; margin-top: 10px; }
+.eyebrow { font-size: 10px; font-weight: 800; letter-spacing: 2.8px; color: #b4cb80; text-transform: uppercase; }
+.splash.bottom {
+  left: 50%; top: auto; bottom: 22px; transform: translateX(-50%);
+  width: min(860px, calc(100vw - 40px)); display: grid; grid-template-columns: 1.15fr 1fr; gap: 8px 26px; align-items: start; padding: 18px 26px;
+}
+.splash.bottom h1 { font-size: 26px; margin: 6px 0 8px; }
+.splash.bottom p { font-size: 12.5px; margin: 0; }
+.primary { background: #d0e68b; border: 0; border-radius: 12px; padding: 13px 21px; color: #223820; font-weight: 900; width: 100%; margin-top: 10px; font-size: 15px; }
+.primary:hover { background: #dff29e; }
+.secondary { background: transparent; border: 1px solid #7f956d; color: #dce5c2; border-radius: 12px; padding: 11px 15px; width: 100%; margin-top: 8px; }
+.splash .record { font-size: 10px; text-align: center; margin-top: 10px; color: #9fb184; }
+.help-grid { font-size: 13px; line-height: 1.75; color: #d1ddbe; }
+.help-grid b { color: #d7ec92; }
+
+.feedback {
+  position: absolute; left: 50%; top: 21%; transform: translateX(-50%); color: #fff9d6; background: #234837e0;
+  padding: 9px 18px; border-radius: 30px; font-weight: 800; font-size: 14px; opacity: 0; transition: opacity .15s; white-space: nowrap;
+}
+.feedback.show { opacity: 1; }
+.wave {
+  position: absolute; left: 50%; top: 13%; transform: translateX(-50%) scale(.8); color: #ffe9a8;
+  font-size: 30px; font-weight: 900; letter-spacing: 3px; text-shadow: 0 3px 0 #6b3b1b, 0 8px 24px #000a; opacity: 0; transition: opacity .2s, transform .25s;
+}
+.wave.show { opacity: 1; transform: translateX(-50%) scale(1); }
+.floating {
+  position: absolute; color: #fff5ba; font-size: 24px; font-weight: 900; text-shadow: 0 2px 3px #35503a, 0 0 12px #35503a;
+  animation: float .85s ease-out forwards; pointer-events: none; transform: translateX(-50%);
+}
+.floating.small { font-size: 14px; color: #ffd9c9; }
+@keyframes float { to { transform: translate(-50%, -60px); opacity: 0; } }
+.fatal { padding: 50px; max-width: 650px; margin: auto; line-height: 1.7; }
+.fatal a { color: #d7e98d; }
+
+/* ---------- Адаптив ---------- */
+@media (max-width: 900px) {
+  .hud { width: 262px; padding: 11px 14px; left: 14px; top: 14px; }
+  .brand { font-size: 17px; margin-bottom: 6px; }
+  .brand .clock { font-size: 18px; }
+  .meter { font-size: 11px; margin: 6px 0; grid-template-columns: 55px 1fr 34px; }
+  .topright { right: 14px; top: 14px; gap: 6px; }
+  .pill { padding: 8px 10px; }
+  .score strong { font-size: 24px; }
+  .ability { width: 132px; min-height: 74px; padding: 10px 10px; }
+  .ability kbd { font-size: 24px; }
+  .bottom-note { display: none; }
+  .switch { bottom: 9px; font-size: 9px; }
+  .limb { bottom: 104px; font-size: 10px; }
+  .splash.bottom { grid-template-columns: 1fr; gap: 4px; padding: 16px 20px; bottom: 14px; }
+  .splash.bottom h1 { font-size: 22px; }
+}
+@media (max-width: 600px) {
+  .hud { width: 196px; top: 9px; left: 9px; padding: 9px 11px; border-radius: 15px; }
+  .brand { font-size: 14px; margin: 0 0 6px; gap: 5px; }
+  .brand .logo { display: none; }
+  .brand .clock { font-size: 15px; padding: 2px 7px; }
+  .meter { grid-template-columns: 46px 1fr 30px; gap: 5px; margin: 5px 0; font-size: 10px; }
+  .meter b { font-size: 9px; }
+  .bar { height: 6px; }
+  .topright { right: 9px; top: 9px; gap: 5px; }
+  .pill { font-size: 11px; padding: 7px 9px; border-radius: 10px; min-width: 34px; }
+  .score strong { font-size: 20px; }
+  .score small { font-size: 8px; letter-spacing: 1px; }
+  .abilities { bottom: 12px; gap: 7px; width: calc(100% - 20px); }
+  .ability { width: 25%; min-height: 66px; border-radius: 15px; padding: 6px; grid-template-columns: 18px 1fr; }
+  .ability kbd { font-size: 21px; }
+  .ability span { font-size: 20px; }
+  .ability small { font-size: 8px; }
+  .limb { bottom: 84px; font-size: 9px; letter-spacing: 1px; }
+  .switch { bottom: 4px; right: 12px; }
+  .splash.bottom { width: calc(100% - 20px); bottom: 10px; padding: 14px 16px; }
+  .splash.bottom h1 { font-size: 20px; margin: 4px 0 6px; }
+  .splash.bottom p { font-size: 11px; }
+  .splash.bottom .record { margin-top: 6px; }
+  .primary { padding: 10px; margin-top: 6px; }
+  .feedback { top: 24%; font-size: 11px; }
+  .wave { font-size: 20px; top: 16%; }
+  .splash { padding: 20px; }
+  .splash h1 { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floating { animation-duration: .15s; }
+}

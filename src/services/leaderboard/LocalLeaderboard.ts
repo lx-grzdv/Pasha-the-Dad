@@ -1,4 +1,8 @@
-import type { LeaderboardService, RunRecord } from './types';
+import type { LeaderboardQuery, LeaderboardService, RunRecord } from './types';
+
+function matches(run: RunRecord, query?: LeaderboardQuery): boolean {
+  return !query?.version || run.gameVersion === query.version;
+}
 
 const STORAGE_KEY = 'pasha_dead_runs';
 
@@ -34,22 +38,23 @@ export class LocalLeaderboard implements LeaderboardService {
     saveRuns(runs.slice(0, 500));
   }
 
-  async getTopRuns(limit: number): Promise<RunRecord[]> {
+  async getTopRuns(limit: number, query?: LeaderboardQuery): Promise<RunRecord[]> {
     return loadRuns()
+      .filter((r) => matches(r, query))
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
   }
 
-  async getTodayTopRuns(limit: number): Promise<RunRecord[]> {
+  async getTodayTopRuns(limit: number, query?: LeaderboardQuery): Promise<RunRecord[]> {
     return loadRuns()
-      .filter((r) => isToday(r.createdAt))
+      .filter((r) => isToday(r.createdAt) && matches(r, query))
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
   }
 
-  async getPlayerBest(playerId: string): Promise<RunRecord | null> {
+  async getPlayerBest(playerId: string, query?: LeaderboardQuery): Promise<RunRecord | null> {
     const playerRuns = loadRuns()
-      .filter((r) => r.playerId === playerId)
+      .filter((r) => r.playerId === playerId && matches(r, query))
       .sort((a, b) => b.score - a.score);
     return playerRuns[0] ?? null;
   }

@@ -33,27 +33,31 @@ async function insertRun(sql: Sql, run: RunRecord): Promise<void> {
   `;
 }
 
-async function fetchTop(sql: Sql, limit: number, period?: string): Promise<DbRunRow[]> {
+async function fetchTop(sql: Sql, limit: number, period?: string, version?: string): Promise<DbRunRow[]> {
+  // Версии игры (2D и 3D) не сравнимы по очкам, поэтому фильтр по game_version.
+  const versionFilter = version ?? '%';
   if (period === 'today') {
     return sql`
       SELECT * FROM runs
-      WHERE created_at >= CURRENT_DATE
+      WHERE created_at >= CURRENT_DATE AND game_version LIKE ${versionFilter}
       ORDER BY score DESC
       LIMIT ${limit}
-    ` as Promise<DbRunRow[]>;
+    ` as unknown as Promise<DbRunRow[]>;
   }
 
   return sql`
     SELECT * FROM runs
+    WHERE game_version LIKE ${versionFilter}
     ORDER BY score DESC
     LIMIT ${limit}
-  ` as Promise<DbRunRow[]>;
+  ` as unknown as Promise<DbRunRow[]>;
 }
 
-async function fetchPlayerBest(sql: Sql, playerId: string): Promise<DbRunRow | null> {
+async function fetchPlayerBest(sql: Sql, playerId: string, version?: string): Promise<DbRunRow | null> {
+  const versionFilter = version ?? '%';
   const rows = (await sql`
     SELECT * FROM runs
-    WHERE player_id = ${playerId}::uuid
+    WHERE player_id = ${playerId}::uuid AND game_version LIKE ${versionFilter}
     ORDER BY score DESC
     LIMIT 1
   `) as DbRunRow[];
@@ -84,14 +88,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       const period = typeof req.query.period === 'string' ? req.query.period : undefined;
       const playerId =
         typeof req.query.playerId === 'string' ? req.query.playerId : undefined;
+      const version = typeof req.query.version === 'string' ? req.query.version.slice(0, 64) : undefined;
 
       if (playerId) {
-        const row = await fetchPlayerBest(sql, playerId);
+        const row = await fetchPlayerBest(sql, playerId, version);
         res.status(200).json({ runs: row ? [rowToRunRecord(row)] : [] });
         return;
       }
 
-      const rows = await fetchTop(sql, limit, period);
+      const rows = await fetchTop(sql, limit, period, version);
       res.status(200).json({ runs: rows.map((row) => rowToRunRecord(row)) });
       return;
     }

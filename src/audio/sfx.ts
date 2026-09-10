@@ -160,3 +160,17 @@ export function sfxClick(): void {
 export function sfxPause(on: boolean): void {
   tone({ from: on ? 520 : 380, to: on ? 380 : 520, dur: 0.1, vol: 0.08 });
 }
+
+/** Поражение-завал: медленный нисходящий чиптюн в духе старых платформеров. */
+export function sfxGameOver(): void {
+  const notes: [number, number, number][] = [
+    [523, 0, 0.16], [392, 0.18, 0.16], [330, 0.36, 0.3],
+    [440, 0.72, 0.14], [494, 0.88, 0.14], [440, 1.04, 0.14],
+    [415, 1.24, 0.14], [466, 1.4, 0.14], [415, 1.56, 0.14],
+    [392, 1.78, 0.5],
+  ];
+  for (const [f, delay, dur] of notes) {
+    tone({ type: 'square', from: f, dur, vol: 0.09, delay });
+    tone({ type: 'triangle', from: f / 2, dur, vol: 0.06, delay });
+  }
+}
